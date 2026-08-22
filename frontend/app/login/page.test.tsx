@@ -29,3 +29,15 @@ describe("LoginPage remember me", () => {
     expect(setRememberMe).toHaveBeenCalledWith(false);
   });
 });
+
+describe("LoginPage password visibility", () => {
+  it("hides the password by default and reveals it on toggle click", () => {
+    render(<LoginPage />);
+    const passwordInput = screen.getByPlaceholderText("••••••••") as HTMLInputElement;
+    expect(passwordInput.type).toBe("password");
+    fireEvent.click(screen.getByRole("button", { name: /show password/i }));
+    expect(passwordInput.type).toBe("text");
+    fireEvent.click(screen.getByRole("button", { name: /hide password/i }));
+    expect(passwordInput.type).toBe("password");
+  });
+});

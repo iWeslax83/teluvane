@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [remember, setRemember] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -100,9 +101,17 @@ export default function LoginPage() {
           {mode !== "reset" && (
             <div className="field">
               <label className="label">Password</label>
-              <input className="input" type="password"
-                     autoComplete={mode === "login" ? "current-password" : "new-password"}
-                     placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+              <div style={{ position: "relative" }}>
+                <input className="input" type={showPassword ? "text" : "password"}
+                       autoComplete={mode === "login" ? "current-password" : "new-password"}
+                       placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)}
+                       required style={{ paddingRight: 70 }} />
+                <button type="button" className="btn-link" onClick={() => setShowPassword(s => !s)}
+                        style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", fontSize: "0.8rem" }}
+                        aria-label={showPassword ? "Hide password" : "Show password"}>
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </div>
           )}
           {mode !== "reset" && (
