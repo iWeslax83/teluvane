@@ -17,6 +17,10 @@ export default function LoginPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "signup" && password.length < 6) {
+      setErr("Password must be at least 6 characters.");
+      return;
+    }
     setRememberMe(remember);
     setErr(null);
     setBusy(true);

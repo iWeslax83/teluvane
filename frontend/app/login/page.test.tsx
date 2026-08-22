@@ -41,3 +41,17 @@ describe("LoginPage password visibility", () => {
     expect(passwordInput.type).toBe("password");
   });
 });
+
+describe("LoginPage inline validation", () => {
+  it("shows a specific message for a too-short signup password without calling the network", async () => {
+    const { getSupabase } = await import("@/lib/supabase");
+    const signUp = (getSupabase() as any).auth.signUp;
+    render(<LoginPage />);
+    fireEvent.click(screen.getByRole("button", { name: /sign up$/i })); // switch to signup mode
+    fireEvent.change(screen.getByPlaceholderText("you@company.com"), { target: { value: "a@b.com" } });
+    fireEvent.change(screen.getByPlaceholderText("••••••••"), { target: { value: "abc" } });
+    fireEvent.click(screen.getByRole("button", { name: /^sign up$/i }));
+    expect(await screen.findByText(/password must be at least 6 characters/i)).toBeTruthy();
+    expect(signUp).not.toHaveBeenCalled();
+  });
+});
