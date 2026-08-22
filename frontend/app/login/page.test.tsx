@@ -1,0 +1,31 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import LoginPage from "./page";
+
+const signInWithPassword = vi.fn().mockResolvedValue({ error: null });
+vi.mock("@/lib/supabase", () => ({
+  getSupabase: () => ({ auth: { signInWithPassword, signUp: vi.fn(), resetPasswordForEmail: vi.fn() } }),
+  setRememberMe: vi.fn(),
+}));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
+beforeEach(() => {
+  signInWithPassword.mockClear();
+});
+
+describe("LoginPage remember me", () => {
+  it("defaults to checked", () => {
+    render(<LoginPage />);
+    expect((screen.getByLabelText(/remember me/i) as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("calls setRememberMe(false) on submit when unchecked", async () => {
+    const { setRememberMe } = await import("@/lib/supabase");
+    render(<LoginPage />);
+    fireEvent.change(screen.getByPlaceholderText("you@company.com"), { target: { value: "a@b.com" } });
+    fireEvent.change(screen.getByPlaceholderText("••••••••"), { target: { value: "password123" } });
+    fireEvent.click(screen.getByLabelText(/remember me/i));
+    fireEvent.click(screen.getByRole("button", { name: /log in/i }));
+    expect(setRememberMe).toHaveBeenCalledWith(false);
+  });
+});

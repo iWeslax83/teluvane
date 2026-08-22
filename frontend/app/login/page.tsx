@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase, setRememberMe } from "@/lib/supabase";
 
 export default function LoginPage() {
   const sb = getSupabase();
@@ -12,9 +12,11 @@ export default function LoginPage() {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    setRememberMe(remember);
     setErr(null);
     setBusy(true);
     // Wrapped in try/finally: signInWithPassword/signUp can throw (network error, bad env
@@ -101,6 +103,15 @@ export default function LoginPage() {
               <input className="input" type="password"
                      autoComplete={mode === "login" ? "current-password" : "new-password"}
                      placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+            </div>
+          )}
+          {mode !== "reset" && (
+            <div className="field" style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 15 }}>
+              <input id="remember-me" type="checkbox" checked={remember}
+                     onChange={e => setRemember(e.target.checked)} />
+              <label htmlFor="remember-me" className="small muted" style={{ margin: 0 }}>
+                Remember me on this device
+              </label>
             </div>
           )}
           {mode === "login" && (
