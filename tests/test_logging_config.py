@@ -31,3 +31,17 @@ def test_json_formatter_omits_traceback_key_when_no_exception():
     )
     payload = json.loads(formatter.format(record))
     assert "traceback" not in payload
+
+def test_json_formatter_redacts_secrets_from_traceback():
+    formatter = JsonFormatter()
+    record = None
+    try:
+        raise ValueError("API key is sk-ant-abc123def456")
+    except ValueError:
+        record = logging.LogRecord(
+            name="teluvane.test", level=logging.ERROR, pathname=__file__, lineno=1,
+            msg="failed with secret", args=(), exc_info=__import__("sys").exc_info(),
+        )
+    payload = json.loads(formatter.format(record))
+    assert "[REDACTED]" in payload["traceback"]
+    assert "sk-ant-abc123def456" not in payload["traceback"]
