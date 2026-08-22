@@ -17,3 +17,18 @@ def test_ready_checks_db():
     c = TestClient(app)
     r = c.get("/ready")
     assert r.status_code == 200 and r.json()["db"] is True
+
+def test_uncaught_exception_returns_correlatable_json():
+    from teluvane.ingest import app
+    from fastapi.testclient import TestClient
+
+    @app.get("/__boom-test")
+    def _boom():
+        raise RuntimeError("intentional test failure")
+
+    c = TestClient(app, raise_server_exceptions=False)
+    r = c.get("/__boom-test")
+    assert r.status_code == 500
+    body = r.json()
+    assert body["error"] == "internal_error"
+    assert len(body["request_id"]) == 36   # uuid4 string length

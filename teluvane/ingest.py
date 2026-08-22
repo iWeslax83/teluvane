@@ -2,10 +2,11 @@
 import logging
 import os
 import threading
+import uuid
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, Body, Header, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -77,6 +78,12 @@ app.add_middleware(CORSMiddleware, allow_origins=_origins,
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    request_id = str(uuid.uuid4())
+    logging.exception("unhandled exception [request_id=%s] %s %s", request_id, request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"error": "internal_error", "request_id": request_id})
 
 # ---- health / readiness (no auth) ----------------------------------------------------------
 @app.get("/health")
