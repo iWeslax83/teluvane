@@ -6,6 +6,8 @@ class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         payload = {"level": record.levelname, "logger": record.name,
                    "msg": record.getMessage()}
+        if record.exc_info:
+            payload["traceback"] = self.formatException(record.exc_info)
         return json.dumps(payload, ensure_ascii=False)
 
 def configure_logging() -> None:
