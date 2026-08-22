@@ -13,12 +13,13 @@ import { BG, INK, ACCENT, ACCENT_ON_FILL, MUTED, BORDER } from "@/lib/landingThe
 
 const MONO_STACK = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 
-function FadeInSection({ children, style, id }: { children: React.ReactNode; style?: React.CSSProperties; id?: string }) {
+function FadeInSection({ children, style, id, eager }: { children: React.ReactNode; style?: React.CSSProperties; id?: string; eager?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(!!eager);
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
+    if (eager) return;
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(
@@ -29,7 +30,7 @@ function FadeInSection({ children, style, id }: { children: React.ReactNode; sty
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [eager]);
 
   return (
     <div
@@ -68,7 +69,7 @@ export default function LandingBody() {
         <style>{".fade-section{opacity:1 !important;}"}</style>
       </noscript>
 
-      <FadeInSection id="opening" style={{ padding: "4.5rem 1.5rem 5rem" }}>
+      <FadeInSection id="opening" eager style={{ padding: "4.5rem 1.5rem 5rem" }}>
         <div style={{
           maxWidth: 1080, margin: "0 auto",
           display: "flex", flexWrap: "wrap-reverse", gap: "3rem", alignItems: "center",

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase, setRememberMe } from "@/lib/supabase";
 import BrandMark from "@/components/BrandMark";
 
 export default function LoginPage() {
@@ -13,9 +13,16 @@ export default function LoginPage() {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const [remember, setRemember] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "signup" && password.length < 6) {
+      setErr("Password must be at least 6 characters.");
+      return;
+    }
+    setRememberMe(remember);
     setErr(null);
     setBusy(true);
     // Wrapped in try/finally: signInWithPassword/signUp can throw (network error, bad env
@@ -99,9 +106,26 @@ export default function LoginPage() {
           {mode !== "reset" && (
             <div className="field">
               <label className="label">Password</label>
-              <input className="input" type="password"
-                     autoComplete={mode === "login" ? "current-password" : "new-password"}
-                     placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+              <div style={{ position: "relative" }}>
+                <input className="input" type={showPassword ? "text" : "password"}
+                       autoComplete={mode === "login" ? "current-password" : "new-password"}
+                       placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)}
+                       required style={{ paddingRight: 70 }} />
+                <button type="button" className="btn-link" onClick={() => setShowPassword(s => !s)}
+                        style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", fontSize: "0.8rem" }}
+                        aria-label={showPassword ? "Hide password" : "Show password"}>
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+          )}
+          {mode !== "reset" && (
+            <div className="field" style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 15 }}>
+              <input id="remember-me" type="checkbox" checked={remember}
+                     onChange={e => setRemember(e.target.checked)} />
+              <label htmlFor="remember-me" className="small muted" style={{ margin: 0 }}>
+                Remember me on this device
+              </label>
             </div>
           )}
           {mode === "login" && (
