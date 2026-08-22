@@ -27,4 +27,10 @@ describe("LandingBody", () => {
     expect(screen.getByText("$19.99")).toBeTruthy();
     expect(screen.getByText(/not legal advice/i)).toBeTruthy();
   });
+
+  it("renders the hero at full opacity immediately, without waiting for IntersectionObserver", () => {
+    const { container } = render(<LandingBody />);
+    const opening = container.querySelector("#opening") as HTMLElement;
+    expect(opening.style.opacity).toBe("1");
+  });
 });
