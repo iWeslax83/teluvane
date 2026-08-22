@@ -3,14 +3,16 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import LoginPage from "./page";
 
 const signInWithPassword = vi.fn().mockResolvedValue({ error: null });
+const signUp = vi.fn();
 vi.mock("@/lib/supabase", () => ({
-  getSupabase: () => ({ auth: { signInWithPassword, signUp: vi.fn(), resetPasswordForEmail: vi.fn() } }),
+  getSupabase: () => ({ auth: { signInWithPassword, signUp, resetPasswordForEmail: vi.fn() } }),
   setRememberMe: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 beforeEach(() => {
   signInWithPassword.mockClear();
+  signUp.mockClear();
 });
 
 describe("LoginPage remember me", () => {
