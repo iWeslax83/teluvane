@@ -64,3 +64,17 @@ def test_demo_seed_is_tenant_scoped(client):
     # org B cannot see org A's seeded demo session
     b_sessions = client.get("/sessions", headers={"Authorization": f"Bearer {_jwt('ub')}"}).json()
     assert all(s["session_id"] != sess for s in b_sessions)
+
+def test_demo_seed_returns_503_on_db_failure(client, monkeypatch):
+    from teluvane.orgs import create_org
+    from teluvane import ingest
+
+    create_org("Acme", "u1")
+
+    def _boom(self, org_id, e):
+        raise RuntimeError("connection pool exhausted")
+    monkeypatch.setattr(ingest.store, "append", _boom.__get__(ingest.store))
+
+    r = client.post("/demo/seed", headers={"Authorization": f"Bearer {_jwt('u1')}"})
+    assert r.status_code == 503
+    assert r.json()["error"] == "seed_unavailable"
