@@ -9,7 +9,7 @@ import Footer from "./Footer";
 import StickyMobileCta from "./StickyMobileCta";
 import LandingInteractionStyles from "./LandingInteractionStyles";
 import { useReducedMotion } from "@/lib/useReducedMotion";
-import { BG, INK, ACCENT, ACCENT_ON_FILL, MUTED, BORDER } from "@/lib/landingTheme";
+import { BG, INK, ACCENT, MUTED, BORDER } from "@/lib/landingTheme";
 
 const MONO_STACK = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 
@@ -85,17 +85,15 @@ export default function LandingBody() {
               Tamper one row and the chain breaks visibly. An autonomous tribunal audits the log and exports a regulator-ready evidence pack.
             </p>
             <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
-              <a href="/login" className="landing-btn" style={{
+              <a href="/login" className="landing-btn landing-btn-primary" style={{
                 display: "inline-flex", alignItems: "center", padding: ".75rem 1.6rem",
-                borderRadius: 8, fontSize: ".95rem", fontWeight: 700,
-                background: ACCENT, color: ACCENT_ON_FILL, textDecoration: "none",
+                borderRadius: 8, fontSize: ".95rem", fontWeight: 700, textDecoration: "none",
               }}>
                 Get started free
               </a>
-              <a href="https://github.com/iWeslax83/teluvane" target="_blank" rel="noopener" className="landing-btn landing-link" style={{
+              <a href="https://github.com/iWeslax83/teluvane" target="_blank" rel="noopener" className="landing-btn landing-btn-ghost landing-link" style={{
                 display: "inline-flex", alignItems: "center", padding: ".75rem 1.6rem",
-                borderRadius: 8, fontSize: ".95rem", fontWeight: 600,
-                background: "transparent", color: INK, border: `1.5px solid ${BORDER}`, textDecoration: "none",
+                borderRadius: 8, fontSize: ".95rem", fontWeight: 600, textDecoration: "none",
               }}>
                 View on GitHub
               </a>
@@ -129,7 +127,7 @@ export default function LandingBody() {
                 borderLeft: i === 0 ? "none" : `1px solid ${BORDER}`,
                 marginBottom: "1.5rem",
               }}>
-                <div style={{ fontSize: "2.1rem", fontWeight: 900, letterSpacing: "-.02em", color: ACCENT, fontFamily: MONO_STACK }}>{num}</div>
+                <div style={{ fontSize: "2.1rem", fontWeight: 900, letterSpacing: "-.02em", color: ACCENT, fontFamily: MONO_STACK, fontVariantNumeric: "tabular-nums" }}>{num}</div>
                 <p style={{ fontSize: ".85rem", color: MUTED, marginTop: ".4rem" }}>{text}</p>
               </div>
             ))}
@@ -178,7 +176,7 @@ export default function LandingBody() {
           <p style={{ fontSize: ".98rem", color: MUTED, maxWidth: 560, marginBottom: "1.4rem" }}>
             Each event stores the hash of the one before it. Change a single byte in event #14 and every event after it, up to #4471, fails verification the next time anyone opens the log.
           </p>
-          <div style={{ fontFamily: MONO_STACK, fontSize: ".85rem", color: INK, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${ACCENT}`, padding: ".8rem 1rem", background: "transparent" }}>
+          <div style={{ fontFamily: MONO_STACK, fontSize: ".85rem", color: INK, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${ACCENT}`, padding: ".8rem 1rem", background: "transparent", fontVariantNumeric: "tabular-nums" }}>
             verify(chain) &rarr; 4471/4471 events valid &middot; <span style={{ color: ACCENT, fontWeight: 700 }}>INTACT</span>
           </div>
         </div>

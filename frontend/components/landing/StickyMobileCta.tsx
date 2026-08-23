@@ -1,4 +1,4 @@
-import { BG, ACCENT, ACCENT_ON_FILL, BORDER } from "@/lib/landingTheme";
+import { BG, BORDER } from "@/lib/landingTheme";
 
 export default function StickyMobileCta() {
   return (
@@ -18,7 +18,7 @@ export default function StickyMobileCta() {
     >
       <a
         href="/login"
-        className="landing-btn"
+        className="landing-btn landing-btn-primary"
         style={{
           display: "block",
           textAlign: "center",
@@ -27,8 +27,6 @@ export default function StickyMobileCta() {
           borderRadius: 8,
           fontSize: ".95rem",
           fontWeight: 700,
-          background: ACCENT,
-          color: ACCENT_ON_FILL,
           textDecoration: "none",
         }}
       >
