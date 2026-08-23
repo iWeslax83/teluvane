@@ -51,9 +51,13 @@ export default function Post() {
       <p style={proseStyles.p}>
         For an internal debugging trace, trusting your own team not to have tampered with a log
         is reasonable. For a compliance audit, it isn&apos;t, the entire point of an audit is
-        that a third party doesn&apos;t have to take your word for it. A chain that can be
-        independently re-verified by anyone, including the auditor, removes trust from the
-        equation and replaces it with math.
+        that a third party doesn&apos;t have to take your word for it. Hash-chaining closes one
+        specific gap: nobody, including someone with ordinary write access to the log, can edit a
+        row without every event after it failing verification. It doesn&apos;t by itself remove
+        trust in whoever hosts the database, that requires a separate, independent witness (for
+        example, periodically anchoring the chain&apos;s state somewhere the vendor doesn&apos;t
+        control) so a third party can check integrity without taking the vendor&apos;s word for
+        it either.
       </p>
 
       <h2 style={proseStyles.h2}>What to check in your own logging</h2>
@@ -61,10 +65,12 @@ export default function Post() {
         <li style={proseStyles.li}>Can any single row be edited or deleted without affecting anything else in the log?</li>
         <li style={proseStyles.li}>If so, is there any independent way to detect that it happened?</li>
         <li style={proseStyles.li}>Would your current setup survive an auditor asking &quot;how do I know this log is complete and unaltered?&quot;</li>
+        <li style={proseStyles.li}>Is the answer verifiable by someone who doesn&apos;t have to trust the vendor&apos;s own database, or only by the vendor?</li>
       </ul>
       <p style={proseStyles.p}>
-        If the answer to the last question is &quot;you&apos;d have to trust us,&quot; that&apos;s
-        the gap tamper-evident logging exists to close.
+        If the answer to the last question is &quot;you&apos;d have to trust us,&quot; hash-chaining
+        narrows that gap, tampering becomes visible instead of invisible, but doesn&apos;t close
+        it fully until the log is also anchored outside the vendor&apos;s own infrastructure.
       </p>
     </ArticleLayout>
   );
