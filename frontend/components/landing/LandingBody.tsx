@@ -50,14 +50,14 @@ function FadeInSection({ children, style, id, eager }: { children: React.ReactNo
 
 const stats = [
   { num: "€35M", text: "Maximum fine for non-compliance with EU AI Act obligations, or 7% of global revenue." },
-  { num: "2026", text: "Full obligations in force for high-risk AI systems across all EU member states." },
-  { num: "0", text: "Purpose-built tools for AI agent compliance adjudication before TELUVANE." },
+  { num: "2026", text: "Article 50 transparency obligations (chatbot and synthetic-media disclosure) take effect. Full high-risk obligations are delayed to December 2027 under the Digital Omnibus." },
+  { num: "4", text: "Compliance packs shipped: EU AI Act, ISO 42001, NIST AI RMF, and SOC 2." },
   { num: "Art.15", text: "Robustness and cybersecurity requirements your agent logs must now demonstrate." },
 ];
 
 const steps = [
   { title: "Recorder", desc: "Every agent action, LLM call, tool invocation, and result is appended to a SHA-256 hash-chained log. Any silent edit breaks the chain immediately." },
-  { title: "Tribunal", desc: "An autonomous multi-agent panel audits the full log against a structured EU AI Act policy pack, citing evidence, article references, and a confidence score for each finding." },
+  { title: "Tribunal", desc: "An autonomous multi-agent panel audits the full log against a structured policy pack, EU AI Act, ISO 42001, NIST AI RMF, or SOC 2, citing evidence, article references, and a confidence score for each finding." },
   { title: "Evidence Pack", desc: "One click exports an auditor-ready report: incident summary, violation table, full action log, and chain-integrity status, formatted for regulators." },
 ];
 

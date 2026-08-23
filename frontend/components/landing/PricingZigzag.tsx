@@ -70,7 +70,7 @@ export default function PricingZigzag({ headingColor = INK }: { headingColor?: s
           eyebrow="Free / Open Source"
           price="$0"
           description="Self-host on your own infrastructure. AGPL-3.0 licensed."
-          features={["Unlimited agents (self-hosted)", "SHA-256 hash-chained recorder", "EU AI Act policy pack (YAML)", "Tribunal audit CLI", "Evidence pack export (HTML)", "Community support (GitHub)"]}
+          features={["Unlimited agents (self-hosted)", "SHA-256 hash-chained recorder", "EU AI Act, ISO 42001, NIST AI RMF, and SOC 2 policy packs (YAML)", "Tribunal audit CLI", "Evidence pack export (HTML)", "Community support (GitHub)"]}
           ctaLabel="View on GitHub"
           ctaHref="https://github.com/iWeslax83/teluvane"
         />
@@ -80,7 +80,7 @@ export default function PricingZigzag({ headingColor = INK }: { headingColor?: s
           price="$19.99"
           priceSuffix="/mo"
           description="Managed cloud. Everything you need for a production AI team, without running your own infrastructure."
-          features={["Up to 10 agents managed", "Hosted dashboard and real-time log", "Automated tribunal runs on schedule", "PDF + HTML evidence pack exports", "Custom policy rules", "Priority email support"]}
+          features={["Up to 10 agents managed", "Hosted dashboard and real-time log", "Automated tribunal runs on schedule", "EU AI Act, ISO 42001, NIST AI RMF, and SOC 2 policy packs", "PDF + HTML evidence pack exports", "Custom policy rules", "Priority email support"]}
           ctaLabel="Get started free"
           ctaHref="/login"
         />
@@ -88,7 +88,7 @@ export default function PricingZigzag({ headingColor = INK }: { headingColor?: s
           eyebrow="Enterprise"
           price="Custom"
           description="For regulated industries, large deployments, on-prem needs."
-          features={["Unlimited agents", "SSO / SAML integration", "On-premises deployment", "Custom policy packs and mapping", "Dedicated SLA and support", "Regulator liaison assistance"]}
+          features={["Unlimited agents", "SSO / SAML integration", "On-premises deployment", "Custom policy packs and mapping"]}
           ctaLabel="Contact us"
           ctaHref="/login"
         />
