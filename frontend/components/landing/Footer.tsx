@@ -7,6 +7,8 @@ export default function Footer() {
         <div><strong style={{ color: INK }}>TELUVANE</strong>: AI Agent Accountability and Compliance</div>
         <div>
           <a href="https://github.com/iWeslax83/teluvane" target="_blank" rel="noopener" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>GitHub</a>
+          &nbsp;·&nbsp;
+          <a href="/blog" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Blog</a>
           &nbsp;·&nbsp; AGPL-3.0 licensed &nbsp;·&nbsp;
           <a href="/login" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Dashboard</a>
           &nbsp;·&nbsp;

@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "teluvane"
 version = "0.1.0"
 description = "AI-agent accountability and compliance auditing tool"
+readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "AGPL-3.0-or-later" }
 authors = [{ name = "Emir Sakarya" }]

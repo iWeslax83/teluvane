@@ -56,6 +56,7 @@ const stats = [
 ];
 
 const steps = [
+  { title: "Connect", desc: "Point Claude Desktop or Claude Code at the TELUVANE MCP server with one config file, no code in the agent. Any other agent can POST to /events with an API key." },
   { title: "Recorder", desc: "Every agent action, LLM call, tool invocation, and result is appended to a SHA-256 hash-chained log. Any silent edit breaks the chain immediately." },
   { title: "Tribunal", desc: "An autonomous multi-agent panel audits the full log against a structured policy pack, EU AI Act, ISO 42001, NIST AI RMF, or SOC 2, citing evidence, article references, and a confidence score for each finding." },
   { title: "Evidence Pack", desc: "One click exports an auditor-ready report: incident summary, violation table, full action log, and chain-integrity status, formatted for regulators." },
@@ -139,7 +140,7 @@ export default function LandingBody() {
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
           <div style={{ fontSize: ".78rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: ACCENT, marginBottom: ".6rem" }}>How it works</div>
           <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.4rem)", fontWeight: 800, letterSpacing: "-.025em", marginBottom: "2.8rem", maxWidth: 640 }}>
-            Three steps from first action to court-ready evidence.
+            Four steps from first action to court-ready evidence.
           </h2>
           <div>
             {steps.map(({ title, desc }, i) => (

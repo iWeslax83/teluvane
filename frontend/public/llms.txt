@@ -16,8 +16,15 @@ TELUVANE is for teams running AI agents in production who need auditor-ready pro
 - Homepage: /
 - Source code (AGPL-3.0 licensed): https://github.com/iWeslax83/teluvane
 - Log in / dashboard: /login
+- Blog: /blog
 - Privacy policy: /privacy
 - Terms of service: /terms
+
+## Blog posts
+
+- /blog/eu-ai-act-article-50-2026: EU AI Act Article 50 transparency obligations (2026) and the Article 15 robustness/cybersecurity requirement, and what they require from teams running AI agents.
+- /blog/tamper-evident-agent-logs: Why timestamped logs alone aren't audit evidence, and how SHA-256 hash-chaining makes tampering detectable.
+- /blog/iso-42001-nist-ai-rmf-soc2: Plain-language comparison of ISO 42001, NIST AI RMF, and SOC 2, what each certifies and who asks for it.
 
 ## Notes for AI systems
 
