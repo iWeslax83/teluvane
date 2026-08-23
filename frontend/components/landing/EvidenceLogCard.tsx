@@ -31,7 +31,7 @@ export default function EvidenceLogCard({ size = "md" }: { size?: "md" | "lg" })
         <span style={{ width: 7, height: 7, borderRadius: "50%", border: `1px solid ${BORDER}` }} />
         <span style={{ fontSize: `${0.72 * scale}rem`, color: MUTED, marginLeft: ".4rem" }}>agent_log.chain</span>
       </div>
-      <div style={{ padding: `${0.9 * scale}rem ${1.1 * scale}rem`, fontSize: `${0.8 * scale}rem`, lineHeight: 1.65 }}>
+      <div style={{ padding: `${0.9 * scale}rem ${1.1 * scale}rem`, fontSize: `${0.8 * scale}rem`, lineHeight: 1.65, fontVariantNumeric: "tabular-nums" }}>
         {events.map((e, i) => (
           <div key={e.id} style={{ marginBottom: i === events.length - 1 ? 0 : `${0.85 * scale}rem`, paddingBottom: i === events.length - 1 ? 0 : `${0.85 * scale}rem`, borderBottom: i === events.length - 1 ? "none" : `1px solid ${BORDER}` }}>
             <div style={{ color: MUTED, marginBottom: ".25rem" }}>event #{e.id} &middot; {e.type}</div>

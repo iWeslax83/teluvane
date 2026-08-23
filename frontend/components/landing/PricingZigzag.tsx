@@ -30,7 +30,7 @@ function Tier({
       <div style={{ fontSize: ".78rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: emphasized ? ACCENT : MUTED, marginBottom: ".5rem", marginTop: emphasized ? ".3rem" : 0 }}>
         {eyebrow}
       </div>
-      <div style={{ fontSize: "2.4rem", fontWeight: 900, letterSpacing: "-.03em", color: INK }}>
+      <div style={{ fontSize: "2.4rem", fontWeight: 900, letterSpacing: "-.03em", color: INK, fontVariantNumeric: "tabular-nums" }}>
         {price}
         {priceSuffix && <sub style={{ fontSize: "1rem", fontWeight: 500, color: MUTED }}>{priceSuffix}</sub>}
       </div>
@@ -42,12 +42,9 @@ function Tier({
           </li>
         ))}
       </ul>
-      <a href={ctaHref} target={ctaHref.startsWith("http") ? "_blank" : undefined} rel={ctaHref.startsWith("http") ? "noopener" : undefined} className="landing-btn" style={{
+      <a href={ctaHref} target={ctaHref.startsWith("http") ? "_blank" : undefined} rel={ctaHref.startsWith("http") ? "noopener" : undefined} className={`landing-btn ${emphasized ? "landing-btn-primary" : "landing-btn-ghost"}`} style={{
         display: "block", textAlign: "center", padding: ".75rem 1rem", borderRadius: 7,
         fontSize: ".9rem", fontWeight: 700, textDecoration: "none",
-        background: emphasized ? ACCENT : "transparent",
-        color: emphasized ? ACCENT_ON_FILL : INK,
-        border: emphasized ? "none" : `1.5px solid ${BORDER}`,
       }}>
         {ctaLabel}
       </a>

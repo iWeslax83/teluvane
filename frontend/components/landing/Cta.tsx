@@ -1,4 +1,4 @@
-import { BG, SURFACE, INK, ACCENT, ACCENT_ON_FILL, MUTED, BORDER } from "@/lib/landingTheme";
+import { BG, SURFACE, INK, ACCENT, MUTED, BORDER } from "@/lib/landingTheme";
 
 export default function Cta() {
   return (
@@ -14,9 +14,8 @@ export default function Cta() {
           <p style={{ color: MUTED, fontSize: ".9rem", marginBottom: "1.4rem" }}>
             No credit card required. Full access to the dashboard, API key management, and audit reports.
           </p>
-          <a href="/login" className="landing-btn" style={{
+          <a href="/login" className="landing-btn landing-btn-primary" style={{
             display: "inline-block",
-            background: ACCENT, color: ACCENT_ON_FILL,
             padding: ".75rem 2rem", borderRadius: 8,
             fontSize: "1rem", fontWeight: 700, textDecoration: "none",
           }}>
