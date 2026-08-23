@@ -12,6 +12,96 @@
       "sourceType": "github",
       "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
       "computedHash": "0d2c4857a7d6fdcd3fbc46e458fa4c497f029cab89a01548b3defce203003932"
+    },
+    "apple-design": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "apple-design/SKILL.md",
+      "computedHash": "11840b24a11d7f94f39c6aaab074750ae4e4de4ef54ee4b1dd97e16ebd485e61"
+    },
+    "brandkit": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "brandkit/SKILL.md",
+      "computedHash": "b0c4837e1bd140ca816ae54948754ddd2ac1e2a4d3619363777a80caf00b2ede"
+    },
+    "design-taste-frontend": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "design-taste-frontend/SKILL.md",
+      "computedHash": "aa194351b246b8b4799099d4ed7b033d29eab6e6e3d58d8d2172978be7b3ec89"
+    },
+    "design-taste-frontend-v1": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "design-taste-frontend-v1/SKILL.md",
+      "computedHash": "033d45af1ed23832730642f95f40ab49db7fb5222848489a6c5656144bfc6dae"
+    },
+    "gpt-taste": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "gpt-taste/SKILL.md",
+      "computedHash": "2e64c269953f2656c21bf5a0fa6b4568e82fe0c72b36e8f84758e090349966a5"
+    },
+    "high-end-visual-design": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "high-end-visual-design/SKILL.md",
+      "computedHash": "e1e32f5e2d420872c6c7332b53d5ff7721946766b78c4822b424c2d512c8fdbc"
+    },
+    "imagegen-frontend-mobile": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "imagegen-frontend-mobile/SKILL.md",
+      "computedHash": "8a33389979f3074fa0926678e266ad2eb9234624472254469fc1ad916b9caa24"
+    },
+    "imagegen-frontend-web": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "imagegen-frontend-web/SKILL.md",
+      "computedHash": "6b5c2256522fdba1e3313eafa3d743b960a7b13ec029d3e6586e04b23327c1f8"
+    },
+    "image-to-code": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "image-to-code/SKILL.md",
+      "computedHash": "4c060a8064a8b13380bc2ef3d6e6a1d0b1e316aa093cd9807d0ce9e4eeb037fa"
+    },
+    "industrial-brutalist-ui": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "industrial-brutalist-ui/SKILL.md",
+      "computedHash": "fffbaac8597f07679e9d87145533567658aedba3b5eca6f16a7075a333048caa"
+    },
+    "minimalist-ui": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "minimalist-ui/SKILL.md",
+      "computedHash": "36bc7328f085405f43b476938e62460fa573bf7e984e949e072bcf014831a44c"
+    },
+    "redesign-existing-projects": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "redesign-existing-projects/SKILL.md",
+      "computedHash": "98ad3e5b051bfb71b2795f7e8a6aa0d32b51ee095606c098a4b2822ac07926c9"
+    },
+    "stitch-design-taste": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "stitch-design-taste/SKILL.md",
+      "computedHash": "46bdb08fee2dded38b6ba0a051230a502d6ac6e4044afd47592cb40c256028b5"
+    },
+    "ui-inspiration": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": "ui-inspiration/SKILL.md",
+      "computedHash": "b42573724fccbac74a97be376c84198a19514dbe18cadc8ea7e1bf8b003ac902"
+    },
+    "3d-web-experience": {
+      "source": "claudiodearaujo/izacenter",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/3d-web-experience/SKILL.md",
+      "computedHash": "1329eaa8a9d12f7a56a275960f95185d5cabc83f3261f1d6cacb87b250f15741"
     }
   }
 }
