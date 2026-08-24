@@ -153,6 +153,4 @@ MCP server's tool calls.
 
 ---
 
-## License
-
-[AGPL-3.0](LICENSE) — © 2026 iWeslax83
+© 2026 iWeslax83. All rights reserved.

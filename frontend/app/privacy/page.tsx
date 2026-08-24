@@ -63,10 +63,7 @@ export default function PrivacyPage() {
         <section style={sectionStyle}>
           <h2 style={headingStyle}>Contact</h2>
           <p style={bodyStyle}>
-            TELUVANE is an open-source project (AGPL-3.0 licensed) based in Bursa, Türkiye. For privacy questions or data requests, open an issue at{" "}
-            <a href="https://github.com/iWeslax83/teluvane" target="_blank" rel="noopener" style={{ color: "#b4451f" }}>
-              github.com/iWeslax83/teluvane
-            </a>.
+            TELUVANE is based in Bursa, Türkiye. For privacy questions or data requests, contact us through the dashboard or your account email.
           </p>
         </section>
       </div>

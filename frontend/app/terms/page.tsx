@@ -21,7 +21,7 @@ export default function TermsPage() {
         <section style={sectionStyle}>
           <h2 style={headingStyle}>The service</h2>
           <p style={bodyStyle}>
-            TELUVANE is a flight recorder and compliance tribunal for AI agent actions. The core recorder and audit engine are open source (AGPL-3.0 licensed) and can be self-hosted for free. We also offer a hosted Pro plan with a managed dashboard, scheduled audits, and priority support.
+            TELUVANE is a flight recorder and compliance tribunal for AI agent actions, offered as a hosted service with a managed dashboard, scheduled audits, and priority support.
           </p>
         </section>
 
@@ -63,10 +63,7 @@ export default function TermsPage() {
         <section style={sectionStyle}>
           <h2 style={headingStyle}>Contact</h2>
           <p style={bodyStyle}>
-            TELUVANE is an open-source project (AGPL-3.0 licensed) based in Bursa, Türkiye. For questions about these terms, open an issue at{" "}
-            <a href="https://github.com/iWeslax83/teluvane" target="_blank" rel="noopener" style={{ color: "#b4451f" }}>
-              github.com/iWeslax83/teluvane
-            </a>.
+            TELUVANE is based in Bursa, Türkiye. For questions about these terms, contact us through the dashboard or your account email.
           </p>
         </section>
       </div>

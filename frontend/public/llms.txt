@@ -14,7 +14,6 @@ TELUVANE is for teams running AI agents in production who need auditor-ready pro
 ## Links
 
 - Homepage: /
-- Source code (AGPL-3.0 licensed): https://github.com/iWeslax83/teluvane
 - Log in / dashboard: /login
 - Blog: /blog
 - Privacy policy: /privacy

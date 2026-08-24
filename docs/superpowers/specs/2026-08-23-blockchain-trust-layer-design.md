@@ -158,7 +158,7 @@ report" into "here's how to not have to."
 beyond `onlyOwner` (the hot wallet address) on the single write function:
 
 ```solidity
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
 contract TeluvaneAnchorRegistry {

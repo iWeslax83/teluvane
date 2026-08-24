@@ -375,7 +375,7 @@ should cache `~/.solcx` the same way it already caches `pip`'s cache directory, 
 
 Create `contracts/TeluvaneAnchorRegistry.sol` (matches the spec's §8 exactly):
 ```solidity
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
 contract TeluvaneAnchorRegistry {

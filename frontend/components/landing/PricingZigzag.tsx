@@ -59,18 +59,10 @@ export default function PricingZigzag({ headingColor = INK }: { headingColor?: s
         Pricing
       </div>
       <h2 style={{ fontSize: "2rem", fontWeight: 800, letterSpacing: "-.02em", marginBottom: "2.5rem", color: headingColor }}>
-        Start free. Scale with confidence.
+        Scale with confidence.
       </h2>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "1.6rem", alignItems: "stretch" }}>
-        <Tier
-          eyebrow="Free / Open Source"
-          price="$0"
-          description="Self-host on your own infrastructure. AGPL-3.0 licensed."
-          features={["Unlimited agents (self-hosted)", "SHA-256 hash-chained recorder", "EU AI Act, ISO 42001, NIST AI RMF, and SOC 2 policy packs (YAML)", "Tribunal audit CLI", "Evidence pack export (HTML)", "Community support (GitHub)"]}
-          ctaLabel="View on GitHub"
-          ctaHref="https://github.com/iWeslax83/teluvane"
-        />
         <Tier
           emphasized
           eyebrow="Pro"
