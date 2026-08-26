@@ -3,7 +3,7 @@
 **Flight recorder + compliance tribunal for AI agents.**
 
 [![CI](https://github.com/iWeslax83/teluvane/actions/workflows/ci.yml/badge.svg)](https://github.com/iWeslax83/teluvane/actions/workflows/ci.yml)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-lightgrey.svg)](#)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
 
 **[blackbox-agent-accountability.vercel.app](https://blackbox-agent-accountability.vercel.app)**
