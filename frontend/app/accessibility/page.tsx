@@ -7,7 +7,7 @@ import { sectionStyle, headingStyle, bodyStyle } from "@/lib/legalPageStyles";
 const BG = "#f4efe6";
 const TEXT = "#1a1714";
 const MUTED = "#8a8275";
-const ACCENT = "#b4451f";
+const ACCENT = "#2f5266";
 
 const bgRatio = contrastRatio(BG, TEXT);
 const accentRatio = contrastRatio(BG, ACCENT);

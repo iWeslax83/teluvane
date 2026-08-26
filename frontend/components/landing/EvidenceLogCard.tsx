@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { BG, SURFACE, BORDER, ACCENT, INK, MUTED } from "@/lib/landingTheme";
+import { BG, SURFACE, BORDER, ACCENT, CRITICAL, INK, MUTED } from "@/lib/landingTheme";
+import { landingMono } from "@/lib/landingFont";
 
-const MONO_STACK = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+const MONO_STACK = landingMono.style.fontFamily;
 
 const events = [
   { id: "4469", type: "llm_call", action: "invoke_model", hash: "7a10e4...2f9c" },
@@ -37,9 +38,9 @@ export default function EvidenceLogCard({ size = "md" }: { size?: "md" | "lg" })
         borderBottom: `1px solid ${BORDER}`,
         background: BG,
       }}>
-        <span style={{ width: 7, height: 7, borderRadius: "50%", border: `1px solid ${chainBroken ? ACCENT : BORDER}` }} />
-        <span style={{ width: 7, height: 7, borderRadius: "50%", border: `1px solid ${chainBroken ? ACCENT : BORDER}` }} />
-        <span style={{ width: 7, height: 7, borderRadius: "50%", border: `1px solid ${chainBroken ? ACCENT : BORDER}` }} />
+        <span style={{ width: 7, height: 7, borderRadius: "50%", border: `1px solid ${chainBroken ? CRITICAL : BORDER}` }} />
+        <span style={{ width: 7, height: 7, borderRadius: "50%", border: `1px solid ${chainBroken ? CRITICAL : BORDER}` }} />
+        <span style={{ width: 7, height: 7, borderRadius: "50%", border: `1px solid ${chainBroken ? CRITICAL : BORDER}` }} />
         <span style={{ fontSize: `${0.72 * scale}rem`, color: MUTED, marginLeft: ".4rem" }}>agent_log.chain</span>
       </div>
       <div style={{ padding: `${0.9 * scale}rem ${1.1 * scale}rem`, fontSize: `${0.8 * scale}rem`, lineHeight: 1.65, fontVariantNumeric: "tabular-nums" }}>
@@ -65,7 +66,7 @@ export default function EvidenceLogCard({ size = "md" }: { size?: "md" | "lg" })
                   action: <span style={{ color: broken ? MUTED : ACCENT, textDecoration: isTampered ? "line-through" : undefined }}>{e.action}</span>
                 </div>
                 <div style={{ color: INK }}>
-                  hash: <span style={{ color: broken ? ACCENT : MUTED, fontWeight: broken ? 700 : 400 }}>
+                  hash: <span style={{ color: broken ? CRITICAL : MUTED, fontWeight: broken ? 700 : 400 }}>
                     {isTampered ? "MODIFIED" : broken ? "mismatch" : e.hash}
                   </span>
                 </div>
@@ -74,7 +75,7 @@ export default function EvidenceLogCard({ size = "md" }: { size?: "md" | "lg" })
                 <div style={{ color: INK, marginTop: ".25rem" }}>
                   chain:{" "}
                   {chainBroken ? (
-                    <span style={{ color: ACCENT, fontWeight: 700 }}>BROKEN at #{tamperedId}</span>
+                    <span style={{ color: CRITICAL, fontWeight: 700 }}>BROKEN at #{tamperedId}</span>
                   ) : (
                     <span style={{ color: ACCENT, fontWeight: 700 }}>INTACT</span>
                   )}

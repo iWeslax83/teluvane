@@ -33,15 +33,21 @@ export default function OpengraphImage() {
               height: 64,
               borderRadius: 14,
               background: "#1a1714",
-              color: "#f4efe6",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 34,
-              fontWeight: 800,
             }}
           >
-            T
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M2 12 L4 12 L4.8 10.5 L5.6 12 L6.4 7 L7.2 15.5 L8 12 L9.5 12 L10.3 10.5 L11.1 12 L11.9 7 L12.7 15.5 L13.5 12 L15 12"
+                stroke="#6f9db4" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
+              />
+              <path
+                d="M15 12 L15.6 9 L16.2 12 L17 4 L17.8 18 L18.6 10 L19.2 13 L20 12 L21.5 12"
+                stroke="#d4656d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+              />
+            </svg>
           </div>
           <div style={{ fontSize: 40, fontWeight: 800, color: "#1a1714", letterSpacing: "-0.02em" }}>
             TELUVANE
@@ -59,7 +65,7 @@ export default function OpengraphImage() {
             flexWrap: "wrap",
           }}
         >
-          Prove what your <span style={{ color: "#b4451f" }}>AI agents</span> did.
+          Prove what your <span style={{ color: "#2f5266" }}>AI agents</span> did.
         </div>
         <div
           style={{

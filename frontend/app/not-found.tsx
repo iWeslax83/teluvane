@@ -1,6 +1,7 @@
 // frontend/app/not-found.tsx
 import type { Metadata } from "next";
 import Link from "next/link";
+import BrandMark from "@/components/BrandMark";
 
 export const metadata: Metadata = { title: "Page not found: TELUVANE" };
 
@@ -29,15 +30,12 @@ export default function NotFound() {
           height: 48,
           borderRadius: 12,
           background: "#1a1714",
-          color: "#f4efe6",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 24,
-          fontWeight: 800,
         }}
       >
-        T
+        <BrandMark size={28} />
       </div>
       <h1 style={{ fontSize: "2rem", fontWeight: 800, letterSpacing: "-0.02em", margin: 0 }}>
         Page not found
@@ -56,7 +54,7 @@ export default function NotFound() {
           borderRadius: 8,
           fontSize: ".95rem",
           fontWeight: 600,
-          background: "#b4451f",
+          background: "#2f5266",
           color: "#fff",
           textDecoration: "none",
         }}

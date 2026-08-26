@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import LandingBody from "@/components/landing/LandingBody";
 import BrandMark from "@/components/BrandMark";
 import { INK, ACCENT, ACCENT_ON_FILL } from "@/lib/landingTheme";
-import { geistSans } from "@/lib/landingFont";
+import { landingSans } from "@/lib/landingFont";
 
 export const metadata: Metadata = {
   title: "TELUVANE: AI Agent Accountability",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function Landing() {
   return (
-    <div className={geistSans.className}>
+    <div className={landingSans.className}>
       <nav className="landing-nav">
         <a href="#opening" className="brand landing-link" style={{ color: INK, textDecoration: "none" }}>
           <span className="mark"><BrandMark /></span> TELUVANE

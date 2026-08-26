@@ -3,7 +3,8 @@ import { render, screen } from "@testing-library/react";
 import LandingBody from "./LandingBody";
 
 vi.mock("next/font/google", () => ({
-  Geist: () => ({ className: "" }),
+  Public_Sans: () => ({ className: "", style: { fontFamily: "Public Sans" } }),
+  IBM_Plex_Mono: () => ({ className: "", style: { fontFamily: "IBM Plex Mono" } }),
 }));
 
 beforeEach(() => {

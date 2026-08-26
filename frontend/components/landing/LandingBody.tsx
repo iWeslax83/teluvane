@@ -10,8 +10,9 @@ import StickyMobileCta from "./StickyMobileCta";
 import LandingInteractionStyles from "./LandingInteractionStyles";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { BG, INK, ACCENT, MUTED, BORDER } from "@/lib/landingTheme";
+import { landingMono } from "@/lib/landingFont";
 
-const MONO_STACK = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+const MONO_STACK = landingMono.style.fontFamily;
 
 function FadeInSection({ children, style, id, eager }: { children: React.ReactNode; style?: React.CSSProperties; id?: string; eager?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -55,16 +56,44 @@ const stats = [
 ];
 
 const trustPoints = [
-  { title: "Org isolation is enforced in code, not just convention.", desc: "Every database query is scoped to an organization at the data-access layer. A query missing that scope throws before it runs, rather than depending on every developer remembering to filter correctly." },
-  { title: "Two separate credential paths.", desc: "Dashboard logins (Supabase, JWT verified against Supabase's published keys) and agent event ingestion (per-org API keys) never share credentials. A leaked dashboard session can't be used to forge log entries, and vice versa." },
-  { title: "The hash chain detects tampering, it doesn't prevent it.", desc: "A privileged database user can still edit a stored row. What the chain guarantees is that the edit becomes visible the next time anyone verifies the log, instead of staying silent." },
+  {
+    title: "Org isolation is enforced in code, not just convention.",
+    desc: "Every database query is scoped to an organization at the data-access layer. A query missing that scope throws before it runs, rather than depending on every developer remembering to filter correctly.",
+    code: "query.where(org_id=current_org.id)  # required, or the query throws",
+  },
+  {
+    title: "Two separate credential paths.",
+    desc: "Dashboard logins (Supabase, JWT verified against Supabase's published keys) and agent event ingestion (per-org API keys) never share credentials. A leaked dashboard session can't be used to forge log entries, and vice versa.",
+    code: "verify_jwt(session) != verify_api_key(org_key)  # disjoint paths",
+  },
+  {
+    title: "The hash chain detects tampering, it doesn't prevent it.",
+    desc: "A privileged database user can still edit a stored row. What the chain guarantees is that the edit becomes visible the next time anyone verifies the log, instead of staying silent.",
+    code: "sha256(event[i-1].hash + event[i].payload) == event[i].hash",
+  },
 ];
 
 const steps = [
-  { title: "Connect", desc: "Point Claude Desktop or Claude Code at the TELUVANE MCP server with one config file, no code in the agent. Any other agent can POST to /events with an API key." },
-  { title: "Recorder", desc: "Every agent action, LLM call, tool invocation, and result is appended to a SHA-256 hash-chained log. Any silent edit breaks the chain immediately." },
-  { title: "Tribunal", desc: "An autonomous multi-agent panel audits the full log against a structured policy pack, EU AI Act, ISO 42001, NIST AI RMF, or SOC 2, citing evidence, article references, and a confidence score for each finding." },
-  { title: "Evidence Pack", desc: "One click exports an auditor-ready report: incident summary, violation table, full action log, and chain-integrity status, formatted for regulators." },
+  {
+    title: "Connect",
+    desc: "Point Claude Desktop or Claude Code at the TELUVANE MCP server with one config file, no code in the agent. Any other agent can POST to /events with an API key.",
+    artifact: '{\n  "mcpServers": {\n    "teluvane": {\n      "url": "https://api.teluvane.com/mcp"\n    }\n  }\n}',
+  },
+  {
+    title: "Recorder",
+    desc: "Every agent action, LLM call, tool invocation, and result is appended to a SHA-256 hash-chained log. Any silent edit breaks the chain immediately.",
+    artifact: "event #4471 · tool_call\naction: send_email\nhash: 9f2a1c...e08b\nappended, chain: INTACT",
+  },
+  {
+    title: "Tribunal",
+    desc: "An autonomous multi-agent panel audits the full log against a structured policy pack, EU AI Act, ISO 42001, NIST AI RMF, or SOC 2, citing evidence, article references, and a confidence score for each finding.",
+    artifact: 'finding: EU AI Act Art.15\nconfidence: 0.94\n"Model card missing robustness\ntest results for event #4210"',
+  },
+  {
+    title: "Evidence Pack",
+    desc: "One click exports an auditor-ready report: incident summary, violation table, full action log, and chain-integrity status, formatted for regulators.",
+    artifact: "evidence_pack_2026-08-26.pdf\n42 events · 1 finding\nchain: INTACT · exported",
+  },
 ];
 
 export default function LandingBody() {
@@ -142,13 +171,13 @@ export default function LandingBody() {
       </FadeInSection>
 
       <FadeInSection id="how" style={{ padding: "4.5rem 1.5rem", borderTop: `1px solid ${BORDER}` }}>
-        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
           <div style={{ fontSize: ".78rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: ACCENT, marginBottom: ".6rem" }}>How it works</div>
           <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.4rem)", fontWeight: 800, letterSpacing: "-.025em", marginBottom: "2.8rem", maxWidth: 640 }}>
             Four steps from first action to court-ready evidence.
           </h2>
           <div>
-            {steps.map(({ title, desc }, i) => (
+            {steps.map(({ title, desc, artifact }, i) => (
               <div key={title} style={{ display: "flex", gap: "1.4rem" }}>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
                   <div style={{
@@ -163,9 +192,23 @@ export default function LandingBody() {
                     <div style={{ width: 1, flex: 1, background: BORDER, margin: ".4rem 0" }} />
                   )}
                 </div>
-                <div style={{ paddingBottom: i === steps.length - 1 ? 0 : "2.2rem" }}>
-                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: ".4rem" }}>{title}</h3>
-                  <p style={{ fontSize: ".9rem", color: MUTED, maxWidth: 520 }}>{desc}</p>
+                <div style={{
+                  paddingBottom: i === steps.length - 1 ? 0 : "2.2rem",
+                  display: "flex", flexWrap: "wrap", gap: "1.6rem", width: "100%",
+                }}>
+                  <div style={{ flex: "1 1 260px" }}>
+                    <h3 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: ".4rem" }}>{title}</h3>
+                    <p style={{ fontSize: ".9rem", color: MUTED, maxWidth: 480 }}>{desc}</p>
+                  </div>
+                  <div style={{
+                    flex: "1 1 260px", maxWidth: 340,
+                    fontFamily: MONO_STACK, fontSize: ".76rem", lineHeight: 1.6,
+                    color: INK, whiteSpace: "pre-wrap",
+                    border: `1px solid ${BORDER}`, borderLeft: `3px solid ${ACCENT}`,
+                    borderRadius: 4, padding: ".7rem .9rem", alignSelf: "flex-start",
+                  }}>
+                    {artifact}
+                  </div>
                 </div>
               </div>
             ))}
@@ -173,17 +216,17 @@ export default function LandingBody() {
         </div>
       </FadeInSection>
 
-      <FadeInSection id="proof" style={{ padding: "4.5rem 1.5rem", borderTop: `1px solid ${BORDER}` }}>
-        <div style={{ maxWidth: 760, margin: "0 auto" }}>
-          <div style={{ fontSize: ".78rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: ACCENT, marginBottom: ".6rem" }}>Proof</div>
-          <h2 style={{ fontSize: "clamp(1.6rem, 3.6vw, 2.1rem)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: "1.2rem", maxWidth: 560 }}>
+      <FadeInSection id="proof" style={{ padding: "4.5rem 1.5rem", background: INK }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <div style={{ fontSize: ".78rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "#6f9db4", marginBottom: ".6rem" }}>Proof</div>
+          <h2 style={{ fontSize: "clamp(1.7rem, 3.8vw, 2.3rem)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: "1.2rem", maxWidth: 620, color: BG }}>
             Every read re-verifies the whole chain, not just the last row.
           </h2>
-          <p style={{ fontSize: ".98rem", color: MUTED, maxWidth: 560, marginBottom: "1.4rem" }}>
+          <p style={{ fontSize: ".98rem", color: "#a8a199", maxWidth: 620, marginBottom: "1.6rem" }}>
             Each event stores the hash of the one before it. Change a single byte in event #14 and every event after it, up to #4471, fails verification the next time anyone opens the log.
           </p>
-          <div style={{ fontFamily: MONO_STACK, fontSize: ".85rem", color: INK, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${ACCENT}`, padding: ".8rem 1rem", background: "transparent", fontVariantNumeric: "tabular-nums" }}>
-            verify(chain) &rarr; 4471/4471 events valid &middot; <span style={{ color: ACCENT, fontWeight: 700 }}>INTACT</span>
+          <div style={{ fontFamily: MONO_STACK, fontSize: ".9rem", color: BG, border: "1px solid #33302b", borderLeft: "3px solid #6f9db4", padding: "1rem 1.2rem", background: "#22201d", fontVariantNumeric: "tabular-nums" }}>
+            verify(chain) &rarr; 4471/4471 events valid &middot; <span style={{ color: "#6f9db4", fontWeight: 700 }}>INTACT</span>
           </div>
         </div>
       </FadeInSection>
@@ -198,10 +241,17 @@ export default function LandingBody() {
             No SOC 2 report yet, no formal certification. Rather than a badge we haven&apos;t earned, here&apos;s how the system is actually built.
           </p>
           <div>
-            {trustPoints.map(({ title, desc }, i) => (
+            {trustPoints.map(({ title, desc, code }, i) => (
               <div key={title} style={{ padding: "1.1rem 0", borderTop: i === 0 ? "none" : `1px solid ${BORDER}` }}>
                 <h3 style={{ fontSize: ".98rem", fontWeight: 700, marginBottom: ".35rem" }}>{title}</h3>
-                <p style={{ fontSize: ".88rem", color: MUTED, maxWidth: 560 }}>{desc}</p>
+                <p style={{ fontSize: ".88rem", color: MUTED, maxWidth: 560, marginBottom: ".6rem" }}>{desc}</p>
+                <div style={{
+                  fontFamily: MONO_STACK, fontSize: ".76rem", color: INK,
+                  background: "#efe9dd", borderRadius: 4, padding: ".45rem .7rem",
+                  maxWidth: 560, overflowX: "auto",
+                }}>
+                  {code}
+                </div>
               </div>
             ))}
           </div>
