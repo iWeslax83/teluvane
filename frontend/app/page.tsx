@@ -1,7 +1,9 @@
 // frontend/app/page.tsx
 import type { Metadata } from "next";
 import LandingBody from "@/components/landing/LandingBody";
-import { BG, INK, ACCENT, ACCENT_ON_FILL, BORDER } from "@/lib/landingTheme";
+import BrandMark from "@/components/BrandMark";
+import { INK, ACCENT, ACCENT_ON_FILL } from "@/lib/landingTheme";
+import { geistSans } from "@/lib/landingFont";
 
 export const metadata: Metadata = {
   title: "TELUVANE: AI Agent Accountability",
@@ -10,19 +12,12 @@ export const metadata: Metadata = {
 
 export default function Landing() {
   return (
-    <div>
-      <nav style={{
-        position: "sticky", top: 0, zIndex: 100,
-        background: BG,
-        borderBottom: `1px solid ${BORDER}`,
-        padding: "0 2rem",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        height: 58,
-      }}>
-        <a href="#opening" className="landing-link" style={{ fontSize: "1.15rem", fontWeight: 700, letterSpacing: "-.01em", color: INK, textDecoration: "none" }}>
-          TELUVANE
+    <div className={geistSans.className}>
+      <nav className="landing-nav">
+        <a href="#opening" className="brand landing-link" style={{ color: INK, textDecoration: "none" }}>
+          <span className="mark"><BrandMark /></span> TELUVANE
         </a>
-        <ul style={{ display: "flex", alignItems: "center", gap: "1.6rem", listStyle: "none", margin: 0, padding: 0 }}>
+        <ul className="landing-nav-links">
           <li><a href="#how" className="landing-link" style={{ color: INK, fontSize: ".9rem", fontWeight: 500, textDecoration: "none" }}>How it works</a></li>
           <li><a href="#pricing" className="landing-link" style={{ color: INK, fontSize: ".9rem", fontWeight: 500, textDecoration: "none" }}>Pricing</a></li>
           <li>

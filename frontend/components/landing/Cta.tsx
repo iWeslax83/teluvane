@@ -9,7 +9,7 @@ export default function Cta() {
         <p style={{ fontSize: "1.05rem", color: MUTED, textAlign: "center", maxWidth: 520, margin: "0 auto" }}>
           We&apos;re onboarding early teams. Create your account and start monitoring your agents in minutes.
         </p>
-        <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "2.8rem", maxWidth: 520, margin: "2.5rem auto 0", boxShadow: "0 2px 12px rgba(0,0,0,.15)", textAlign: "center" }}>
+        <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "2.8rem", maxWidth: 520, margin: "2.5rem auto 0", boxShadow: "var(--shadow)", textAlign: "center" }}>
           <h3 style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: ".5rem", color: INK }}>Start for free</h3>
           <p style={{ color: MUTED, fontSize: ".9rem", marginBottom: "1.4rem" }}>
             No credit card required. Full access to the dashboard, API key management, and audit reports.

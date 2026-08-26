@@ -93,6 +93,34 @@ h2 { font-size: 1.05rem; letter-spacing: 0.01em; }
 .btn-link:hover { text-decoration: underline; }
 .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
 
+/* landing nav */
+.landing-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--paper);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 58px;
+}
+.landing-nav-links { display: flex; align-items: center; gap: 1.6rem; list-style: none; margin: 0; padding: 0; }
+
+/* Below ~640px, logo + two text links + CTA button no longer fit without
+   wrapping the header. Scope the scroll to the links row, same pattern as
+   .navlinks below, so the CTA button and logo stay fixed and every link
+   stays reachable without a horizontal page scroll. */
+@media (max-width: 640px) {
+  .landing-nav { padding: 0 1rem; }
+  .landing-nav-links {
+    gap: 1rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    mask-image: linear-gradient(to right, transparent, black 8px, black calc(100% - 8px), transparent);
+  }
+  .landing-nav-links li { flex: none; }
+}
+
 /* top nav */
 .topnav { border-bottom: 1px solid var(--border); background: #fbf8f1; position: sticky; top: 0; z-index: 10; }
 .topnav .inner { max-width: 880px; margin: 0 auto; padding: 0 24px; height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }

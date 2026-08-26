@@ -51,8 +51,13 @@ function FadeInSection({ children, style, id, eager }: { children: React.ReactNo
 const stats = [
   { num: "€35M", text: "Maximum fine for non-compliance with EU AI Act obligations, or 7% of global revenue." },
   { num: "2026", text: "Article 50 transparency obligations (chatbot and synthetic-media disclosure) take effect. Full high-risk obligations are delayed to December 2027 under the Digital Omnibus." },
-  { num: "4", text: "Compliance packs shipped: EU AI Act, ISO 42001, NIST AI RMF, and SOC 2." },
   { num: "Art.15", text: "Robustness and cybersecurity requirements your agent logs must now demonstrate." },
+];
+
+const trustPoints = [
+  { title: "Org isolation is enforced in code, not just convention.", desc: "Every database query is scoped to an organization at the data-access layer. A query missing that scope throws before it runs, rather than depending on every developer remembering to filter correctly." },
+  { title: "Two separate credential paths.", desc: "Dashboard logins (Supabase, JWT verified against Supabase's published keys) and agent event ingestion (per-org API keys) never share credentials. A leaked dashboard session can't be used to forge log entries, and vice versa." },
+  { title: "The hash chain detects tampering, it doesn't prevent it.", desc: "A privileged database user can still edit a stored row. What the chain guarantees is that the edit becomes visible the next time anyone verifies the log, instead of staying silent." },
 ];
 
 const steps = [
@@ -179,6 +184,26 @@ export default function LandingBody() {
           </p>
           <div style={{ fontFamily: MONO_STACK, fontSize: ".85rem", color: INK, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${ACCENT}`, padding: ".8rem 1rem", background: "transparent", fontVariantNumeric: "tabular-nums" }}>
             verify(chain) &rarr; 4471/4471 events valid &middot; <span style={{ color: ACCENT, fontWeight: 700 }}>INTACT</span>
+          </div>
+        </div>
+      </FadeInSection>
+
+      <FadeInSection id="trust" style={{ padding: "4.5rem 1.5rem", borderTop: `1px solid ${BORDER}` }}>
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <div style={{ fontSize: ".78rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: ACCENT, marginBottom: ".6rem" }}>Security</div>
+          <h2 style={{ fontSize: "clamp(1.6rem, 3.6vw, 2.1rem)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: "1rem", maxWidth: 560 }}>
+            We&apos;re early-stage. Here&apos;s what&apos;s already true.
+          </h2>
+          <p style={{ fontSize: ".95rem", color: MUTED, maxWidth: 560, marginBottom: "2rem" }}>
+            No SOC 2 report yet, no formal certification. Rather than a badge we haven&apos;t earned, here&apos;s how the system is actually built.
+          </p>
+          <div>
+            {trustPoints.map(({ title, desc }, i) => (
+              <div key={title} style={{ padding: "1.1rem 0", borderTop: i === 0 ? "none" : `1px solid ${BORDER}` }}>
+                <h3 style={{ fontSize: ".98rem", fontWeight: 700, marginBottom: ".35rem" }}>{title}</h3>
+                <p style={{ fontSize: ".88rem", color: MUTED, maxWidth: 560 }}>{desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </FadeInSection>

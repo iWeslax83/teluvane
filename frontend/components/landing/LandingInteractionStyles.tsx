@@ -39,6 +39,35 @@ export default function LandingInteractionStyles() {
         outline-offset: 2px;
         border-radius: 2px;
       }
+      /* Evidence card: click-to-tamper rows need the same tactile press
+         feedback as the CTA buttons, plus a real hit area since each row's
+         visual height is well under the 44px touch target minimum. */
+      .evidence-row {
+        cursor: pointer;
+        position: relative;
+        transition: transform 100ms ease-out;
+      }
+      .evidence-row::before {
+        content: "";
+        position: absolute;
+        inset: -8px -4px;
+      }
+      .evidence-row:active {
+        transform: scale(0.99);
+      }
+      .evidence-row:focus-visible {
+        outline: 2px solid ${ACCENT};
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+      .evidence-restore:hover {
+        text-decoration: underline;
+      }
+      .evidence-restore:focus-visible {
+        outline: 2px solid ${ACCENT};
+        outline-offset: 2px;
+        border-radius: 2px;
+      }
     `}</style>
   );
 }
