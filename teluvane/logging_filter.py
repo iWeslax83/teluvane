@@ -13,7 +13,7 @@ def _redact(value):
     return value
 
 class SecretRedactionFilter(logging.Filter):
-    """Strip Anthropic keys and bb_live API keys from every log record, including args."""
+    """Strip Anthropic keys and tv_live_ API keys from every log record, including args."""
     def filter(self, record: logging.LogRecord) -> bool:
         if isinstance(record.msg, str):
             record.msg = _redact(record.msg)

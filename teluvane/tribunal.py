@@ -9,7 +9,6 @@ from .schema import Event, Verdict
 from .policy import PolicyPack, Rule
 
 CONF_THRESHOLD = 0.6   # min confidence for a single-lens flag to count
-JUDGE_MODEL = "claude-opus-4-8"
 LENS_MODEL = "claude-haiku-4-5-20251001"
 
 def _events_to_text(events: list[Event]) -> str:
@@ -123,5 +122,4 @@ def audit(events: list[Event], session_id: str, pack: PolicyPack,
         return offline_audit(events, session_id, pack)
     graph = build_tribunal(pack, anthropic_api_key=anthropic_api_key)
     result = graph.invoke({"events": events, "session_id": session_id, "verdicts": []})
-    final = consolidate([v for v in result["verdicts"]])
-    return [v for v in final if v.violation]
+    return [v for v in consolidate(result["verdicts"]) if v.violation]

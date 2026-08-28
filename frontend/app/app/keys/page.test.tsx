@@ -29,13 +29,13 @@ afterEach(() => {
 
 describe("KeysPage", () => {
   it("lists existing keys and lets you revoke one", async () => {
-    apiFetch.mockResolvedValueOnce([{ id: 1, name: "prod", prefix: "bb_live_ab12", revoked_at: null }]);
+    apiFetch.mockResolvedValueOnce([{ id: 1, name: "prod", prefix: "tv_live_ab12", revoked_at: null }]);
     render(<KeysPage />);
     await waitFor(() => expect(screen.getByText("prod")).toBeTruthy());
     expect(apiFetch).toHaveBeenCalledWith("/keys", { token: "test-token" });
 
     apiFetch.mockResolvedValueOnce({});
-    apiFetch.mockResolvedValueOnce([{ id: 1, name: "prod", prefix: "bb_live_ab12", revoked_at: "2026-01-01" }]);
+    apiFetch.mockResolvedValueOnce([{ id: 1, name: "prod", prefix: "tv_live_ab12", revoked_at: "2026-01-01" }]);
     fireEvent.click(screen.getByRole("button", { name: /revoke/i }));
     await waitFor(() => expect(screen.getByText("revoked")).toBeTruthy());
   });
@@ -46,10 +46,10 @@ describe("KeysPage", () => {
     await waitFor(() => expect(screen.getByText(/no keys yet/i)).toBeTruthy());
 
     fireEvent.change(screen.getByPlaceholderText(/key name/i), { target: { value: "staging" } });
-    apiFetch.mockResolvedValueOnce({ key: "bb_live_abcdef" });
-    apiFetch.mockResolvedValueOnce([{ id: 2, name: "staging", prefix: "bb_live_cd34", revoked_at: null }]);
+    apiFetch.mockResolvedValueOnce({ key: "tv_live_abcdef" });
+    apiFetch.mockResolvedValueOnce([{ id: 2, name: "staging", prefix: "tv_live_cd34", revoked_at: null }]);
     fireEvent.click(screen.getByRole("button", { name: /create key/i }));
 
-    await waitFor(() => expect(screen.getByText("bb_live_abcdef")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("tv_live_abcdef")).toBeTruthy());
   });
 });

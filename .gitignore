@@ -12,5 +12,9 @@ dist/
 .pytest_cache/
 .vercel
 .env*
-sdk-js/node_modules/
+node_modules/
 sdk-js/dist/
+
+# local tooling / session artifacts
+.playwright-mcp/
+/*.png

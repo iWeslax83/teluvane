@@ -86,7 +86,7 @@ export default function KeysPage() {
         <p className="muted small">Send agent actions to TELUVANE with your key as a bearer token:</p>
         <pre className="notice" style={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
 {`curl -X POST ${apiBase}/events \\
-  -H "Authorization: Bearer bb_live_…" \\
+  -H "Authorization: Bearer tv_live_…" \\
   -H "Content-Type: application/json" \\
   -d '{"agent_id":"my-agent","session_id":"sess-1",
        "kind":"tool_call","tool":"send_email",
