@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const siteUrl =
@@ -23,6 +24,7 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">Skip to content</a>
         {children}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
