@@ -1,0 +1,128 @@
+{
+  "cases": [
+    {
+      "leaves": [
+        {
+          "org_id": "org-é",
+          "session_id": "sess-0",
+          "chain_head": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "root": "0xeb705f0135064e3e4d157e60ccc7e5e73bb214de3450eca5d1e5edb055faa504",
+      "proofs": [
+        []
+      ]
+    },
+    {
+      "leaves": [
+        {
+          "org_id": "org-é",
+          "session_id": "sess-0",
+          "chain_head": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "org_id": "org-é",
+          "session_id": "sess-1",
+          "chain_head": "0000000000000000000000000000000000000000000000000000000000000001"
+        }
+      ],
+      "root": "0x084f694c7e4f456a8e0d187bd3657043e54ba2e4d3654f058025a8377f648b47",
+      "proofs": [
+        [
+          "0x93532a9f2a0888cb746f4f12a34eab87afbe9a019ddfc62023a9eb93398babeb"
+        ],
+        [
+          "0xeb705f0135064e3e4d157e60ccc7e5e73bb214de3450eca5d1e5edb055faa504"
+        ]
+      ]
+    },
+    {
+      "leaves": [
+        {
+          "org_id": "org-é",
+          "session_id": "sess-0",
+          "chain_head": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "org_id": "org-é",
+          "session_id": "sess-1",
+          "chain_head": "0000000000000000000000000000000000000000000000000000000000000001"
+        },
+        {
+          "org_id": "org-é",
+          "session_id": "sess-2",
+          "chain_head": "0000000000000000000000000000000000000000000000000000000000000002"
+        }
+      ],
+      "root": "0x493d48adbf3165f3a1cebe6da42bb806f7c4ca131482fc838e1fb168c40a838d",
+      "proofs": [
+        [
+          "0x93532a9f2a0888cb746f4f12a34eab87afbe9a019ddfc62023a9eb93398babeb",
+          "0x4984b7f0236a079bed6648aec47ff26e26d3d1829ae75fd96afcf7f205204527"
+        ],
+        [
+          "0xeb705f0135064e3e4d157e60ccc7e5e73bb214de3450eca5d1e5edb055faa504",
+          "0x4984b7f0236a079bed6648aec47ff26e26d3d1829ae75fd96afcf7f205204527"
+        ],
+        [
+          "0x084f694c7e4f456a8e0d187bd3657043e54ba2e4d3654f058025a8377f648b47"
+        ]
+      ]
+    },
+    {
+      "leaves": [
+        {
+          "org_id": "org-é",
+          "session_id": "sess-0",
+          "chain_head": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "org_id": "org-é",
+          "session_id": "sess-1",
+          "chain_head": "0000000000000000000000000000000000000000000000000000000000000001"
+        },
+        {
+          "org_id": "org-é",
+          "session_id": "sess-2",
+          "chain_head": "0000000000000000000000000000000000000000000000000000000000000002"
+        },
+        {
+          "org_id": "org-é",
+          "session_id": "sess-3",
+          "chain_head": "0000000000000000000000000000000000000000000000000000000000000003"
+        },
+        {
+          "org_id": "org-é",
+          "session_id": "sess-4",
+          "chain_head": "0000000000000000000000000000000000000000000000000000000000000004"
+        }
+      ],
+      "root": "0xa5772239332b121c36fd5fc9b8243c59d3d1ee0a7d7929b23cdbd711ed02cde3",
+      "proofs": [
+        [
+          "0x93532a9f2a0888cb746f4f12a34eab87afbe9a019ddfc62023a9eb93398babeb",
+          "0x1455adeb7f5d5487e51198b0001b4c41e911bc5ff2f56a7c10ae1d2aa306b3e1",
+          "0x17acc63385bb44d4c6d854b34496835bdb64f7aefae331edeea7650e584e06f3"
+        ],
+        [
+          "0xeb705f0135064e3e4d157e60ccc7e5e73bb214de3450eca5d1e5edb055faa504",
+          "0x1455adeb7f5d5487e51198b0001b4c41e911bc5ff2f56a7c10ae1d2aa306b3e1",
+          "0x17acc63385bb44d4c6d854b34496835bdb64f7aefae331edeea7650e584e06f3"
+        ],
+        [
+          "0x9f251651ffd12d1630db811977601006700e3f8830932ba331ed0dc4aa57c06e",
+          "0x084f694c7e4f456a8e0d187bd3657043e54ba2e4d3654f058025a8377f648b47",
+          "0x17acc63385bb44d4c6d854b34496835bdb64f7aefae331edeea7650e584e06f3"
+        ],
+        [
+          "0x4984b7f0236a079bed6648aec47ff26e26d3d1829ae75fd96afcf7f205204527",
+          "0x084f694c7e4f456a8e0d187bd3657043e54ba2e4d3654f058025a8377f648b47",
+          "0x17acc63385bb44d4c6d854b34496835bdb64f7aefae331edeea7650e584e06f3"
+        ],
+        [
+          "0x29a7ba150d089a33da31dd2f1c02b05fde7248e6a74cb43d0b0fe62b18b2649b"
+        ]
+      ]
+    }
+  ]
+}
