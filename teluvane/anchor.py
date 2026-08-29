@@ -9,7 +9,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from . import anchor_store
+from . import anchor_chain, anchor_store, merkle
 from .billing import org_plan
 
 log = logging.getLogger("teluvane.anchor")
@@ -96,3 +96,47 @@ def pending_leaves(pool, cfg: AnchorConfig):
             chain_head = cur.fetchone()[0]
         leaves.append((org_id, session_id, int(through_seq), chain_head))
     return leaves
+
+
+ADVISORY_LOCK_KEY = 0x54454C56  # "TELV"; scopes run_anchor_pass across web instances
+
+
+def run_anchor_pass(pool, cfg: AnchorConfig) -> dict:
+    """Collect pending leaves, build a Merkle tree, persist the batch and every
+    per-session proof to Postgres, then submit the root on-chain. Persist happens
+    strictly before submit so a crash in between leaves a pending batch that
+    Task 7's reconcile can pick up. A Postgres advisory lock keeps two web
+    instances from running a pass at once."""
+    empty = {"anchored": 0, "root": None, "tx_hash": None, "skipped": None}
+    with pool.connection() as lock_conn:
+        with lock_conn.cursor() as cur:
+            cur.execute("SELECT pg_try_advisory_lock(%s)", (ADVISORY_LOCK_KEY,))
+            got = cur.fetchone()[0]
+        lock_conn.commit()
+        if not got:
+            return {**empty, "skipped": "locked"}
+        try:
+            leaves = pending_leaves(pool, cfg)
+            if not leaves:
+                return {**empty, "skipped": "nothing-pending"}
+            root, proofs = merkle.build_tree([(o, s, h) for o, s, _seq, h in leaves])
+            batch_id = anchor_store.insert_batch(pool, root, cfg.chain_id, len(leaves))
+            for org_id, session_id, through_seq, chain_head in leaves:
+                anchor_store.insert_session_anchor(
+                    pool, org_id, session_id, through_seq, batch_id, chain_head,
+                    proofs[(org_id, session_id)])
+            try:
+                tx_hash = anchor_chain.submit_batch(cfg, root, len(leaves))
+            except Exception:
+                log.exception("anchor submit failed; batch %s stays pending", batch_id)
+                return {"anchored": 0, "root": root, "tx_hash": None,
+                        "skipped": "submit-failed"}
+            anchor_store.mark_submitted(pool, batch_id, tx_hash)
+            log.info("anchor batch submitted root=%s tx=%s sessions=%d",
+                     root, tx_hash, len(leaves))
+            return {"anchored": len(leaves), "root": root, "tx_hash": tx_hash,
+                    "skipped": None}
+        finally:
+            with lock_conn.cursor() as cur:
+                cur.execute("SELECT pg_advisory_unlock(%s)", (ADVISORY_LOCK_KEY,))
+            lock_conn.commit()
