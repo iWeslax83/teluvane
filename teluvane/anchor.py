@@ -140,3 +140,66 @@ def run_anchor_pass(pool, cfg: AnchorConfig) -> dict:
             with lock_conn.cursor() as cur:
                 cur.execute("SELECT pg_advisory_unlock(%s)", (ADVISORY_LOCK_KEY,))
             lock_conn.commit()
+
+
+def reconcile_pending(pool, cfg: AnchorConfig) -> None:
+    """Poll submitted batches: mark them mined once confirmations reach
+    cfg.confirmations, mark them failed on revert or submit timeout (dropping
+    their session_anchors so those sessions re-anchor), and re-submit pending
+    batches whose membership persisted but whose submit never landed. Warn when
+    the signer balance falls below cfg.low_balance_alert_avax."""
+    try:
+        bal = anchor_chain.balance_avax(cfg)
+        if bal < cfg.low_balance_alert_avax:
+            log.warning("anchor signer balance low: %.4f AVAX (threshold %.4f)",
+                        bal, cfg.low_balance_alert_avax)
+    except Exception:
+        log.exception("anchor balance check failed")
+
+    try:
+        head = anchor_chain.block_number(cfg)
+    except Exception:
+        log.exception("anchor block_number failed; skipping reconcile")
+        return
+
+    for b in anchor_store.batches_by_status(pool, "pending", "submitted"):
+        if b["status"] == "pending" and not b["tx_hash"]:
+            # membership persisted but submit never happened; retry it (idempotent on-chain)
+            try:
+                txh = anchor_chain.submit_batch(cfg, b["root"], b["session_count"])
+                anchor_store.mark_submitted(pool, b["id"], txh)
+            except Exception:
+                log.exception("anchor resubmit failed for batch %s", b["id"])
+            continue
+
+        try:
+            r = anchor_chain.receipt(cfg, b["tx_hash"])
+        except Exception:
+            log.exception("anchor receipt fetch failed for batch %s", b["id"])
+            continue
+
+        if r is None:
+            submitted_at = b["submitted_at"]
+            if submitted_at and submitted_at.tzinfo is None:
+                submitted_at = submitted_at.replace(tzinfo=timezone.utc)
+            age_min = (datetime.now(timezone.utc) - submitted_at).total_seconds() / 60 \
+                if submitted_at else 0
+            if age_min > cfg.submit_timeout_minutes:
+                log.warning("anchor batch %s timed out unmined; marking failed", b["id"])
+                anchor_store.mark_failed(pool, b["id"])
+            continue
+
+        if r["status"] == 0:
+            log.warning("anchor batch %s reverted on chain; marking failed", b["id"])
+            anchor_store.mark_failed(pool, b["id"])
+            continue
+
+        confirmations = max(0, head - r["block_number"] + 1)
+        if confirmations >= cfg.confirmations:
+            fee = r["gas_used"] * r["effective_gas_price"]
+            anchor_store.mark_mined(pool, b["id"], r["block_number"], r["gas_used"],
+                                    fee, confirmations)
+            log.info("anchor batch %s mined root=%s block=%d gas=%d",
+                     b["id"], b["root"], r["block_number"], r["gas_used"])
+        else:
+            anchor_store.update_confirmations(pool, b["id"], r["block_number"], confirmations)
