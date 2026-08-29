@@ -203,3 +203,109 @@ def reconcile_pending(pool, cfg: AnchorConfig) -> None:
                      b["id"], b["root"], r["block_number"], r["gas_used"])
         else:
             anchor_store.update_confirmations(pool, b["id"], r["block_number"], confirmations)
+
+
+def verify_session(pool, org_id: str, session_id: str, through_seq: int | None = None,
+                   cfg: AnchorConfig | None = None) -> dict:
+    """Recompute a session's anchored chain head and Merkle root from stored data,
+    read anchoredAt(root) from the chain, and classify the result. Never raises on
+    RPC failure: it degrades to status "rpc-unreachable". `org_id` and `proof` are
+    echoed so a browser panel can recompute the root without trusting this server.
+
+    status is one of: not-anchored, verified, mismatch, pending, rpc-unreachable,
+    no-config.
+    """
+    cfg = cfg if cfg is not None else chain_config()
+    from .store import Store
+    store = Store(pool)
+    events = store.events(org_id, session_id)
+    total_seq = events[-1].seq if events else 0
+
+    row = (anchor_store.anchor_for_seq(pool, org_id, session_id, through_seq)
+           if through_seq else anchor_store.latest_anchor(pool, org_id, session_id))
+
+    base = {
+        "anchored": False, "org_id": org_id, "proof": None,
+        "through_seq": None, "total_seq": total_seq, "root": None,
+        "tx_hash": None, "block_number": None, "confirmations": 0,
+        "mined_at": None, "onchain_ts": None, "head_stored": None,
+        "head_recomputed": None, "head_matches": False, "proof_ok": False,
+        "rpc_ok": True, "status": "not-anchored",
+    }
+    if not row:
+        return base
+
+    proof = list(row["proof"] or [])
+    canon = store.canonical_events(org_id, session_id)
+    upto = [c for c in canon if c["seq"] <= row["anchored_through_seq"]]
+    head_recomputed = upto[-1]["hash"] if upto else None
+    head_matches = head_recomputed == row["chain_head"]
+
+    implied_root = merkle.root_from_proof(org_id, session_id, row["chain_head"], proof)
+
+    out = {
+        **base,
+        "anchored": True,
+        "proof": proof,
+        "through_seq": row["anchored_through_seq"],
+        "root": implied_root,
+        "tx_hash": row["tx_hash"],
+        "block_number": row["block_number"],
+        "confirmations": row["confirmations"] or 0,
+        "mined_at": row["mined_at"].isoformat() if row["mined_at"] else None,
+        "head_stored": row["chain_head"],
+        "head_recomputed": head_recomputed,
+        "head_matches": head_matches,
+        "proof_ok": True,
+    }
+
+    if not cfg:
+        out["status"] = "no-config"
+        return out
+
+    try:
+        ts = anchor_chain.read_anchored_at(cfg, implied_root)
+    except Exception:
+        log.exception("anchor verify RPC read failed")
+        out["rpc_ok"] = False
+        out["status"] = "rpc-unreachable"
+        return out
+
+    out["onchain_ts"] = ts or None
+    if ts and head_matches:
+        out["status"] = "verified"
+    elif row["status"] in ("pending", "submitted"):
+        out["status"] = "pending"
+    else:
+        out["status"] = "mismatch"
+    return out
+
+
+def anchor_health(pool) -> dict:
+    """Operator snapshot: signer address/balance, pending batch count, last mined
+    batch. RPC failure degrades rpc_ok to False rather than raising."""
+    cfg = chain_config()
+    if not cfg:
+        return {"enabled": False}
+
+    h = {
+        "enabled": True, "chain_id": cfg.chain_id, "rpc_ok": True,
+        "signer_address": None, "signer_balance_avax": None, "low_balance": False,
+        "pending_batches": len(anchor_store.batches_by_status(pool, "pending", "submitted")),
+        "last_batch_at": None, "last_batch_tx": None,
+    }
+    try:
+        h["signer_address"] = anchor_chain.signer_address(cfg)
+        bal = anchor_chain.balance_avax(cfg)
+        h["signer_balance_avax"] = round(bal, 5)
+        h["low_balance"] = bal < cfg.low_balance_alert_avax
+    except Exception:
+        log.exception("anchor health RPC check failed")
+        h["rpc_ok"] = False
+
+    mined = anchor_store.batches_by_status(pool, "mined")
+    if mined:
+        last = mined[-1]
+        h["last_batch_at"] = last["mined_at"].isoformat() if last["mined_at"] else None
+        h["last_batch_tx"] = last["tx_hash"]
+    return h

@@ -55,10 +55,18 @@ def build_tree(leaves):
     return root, proofs
 
 
-def verify_proof(org_id: str, session_id: str, chain_head_hex: str,
-                 proof, root_hex: str) -> bool:
+def root_from_proof(org_id: str, session_id: str, chain_head_hex: str,
+                    proof: list[str]) -> str:
+    """Fold the leaf through its proof siblings and return the "0x"-prefixed root
+    the proof implies. A single-leaf proof (proof == []) returns the leaf hash."""
     acc = leaf_hash(org_id, session_id, chain_head_hex)
     for sib_hex in proof:
         sib = bytes.fromhex(sib_hex[2:] if sib_hex.startswith("0x") else sib_hex)
         acc = _node(acc, sib)
-    return ("0x" + acc.hex()) == (root_hex if root_hex.startswith("0x") else "0x" + root_hex)
+    return "0x" + acc.hex()
+
+
+def verify_proof(org_id: str, session_id: str, chain_head_hex: str,
+                 proof, root_hex: str) -> bool:
+    implied = root_from_proof(org_id, session_id, chain_head_hex, proof)
+    return implied == (root_hex if root_hex.startswith("0x") else "0x" + root_hex)

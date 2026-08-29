@@ -45,6 +45,19 @@ def test_even_and_odd_counts_match_naive_and_proofs_verify():
             assert merkle.verify_proof(o, s, h, proofs[(o, s)], root)
 
 
+def test_root_from_proof_reconstructs_built_root():
+    for n in (1, 2, 3, 4, 5, 8):
+        leaves = [("o", f"s{i}", f"{i:064x}") for i in range(n)]
+        root, proofs = merkle.build_tree(leaves)
+        for o, s, h in leaves:
+            assert merkle.root_from_proof(o, s, h, proofs[(o, s)]) == root
+
+
+def test_root_from_proof_single_leaf_is_leaf_hash():
+    assert (merkle.root_from_proof("o", "s", "aa", [])
+            == "0x" + merkle.leaf_hash("o", "s", "aa").hex())
+
+
 def test_tampered_head_fails_verification():
     leaves = [("o", f"s{i}", f"{i:064x}") for i in range(4)]
     root, proofs = merkle.build_tree(leaves)
