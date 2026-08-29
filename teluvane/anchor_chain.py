@@ -1,9 +1,6 @@
 """Thin web3.py wrapper for the SessionAnchorRegistry contract. All calls are
 synchronous and single-shot; callers handle retries and error isolation."""
 import json
-import logging
-
-log = logging.getLogger("teluvane.anchor")
 
 ABI = json.loads("""
 [
@@ -44,7 +41,7 @@ def _contract(cfg, w3):
 def balance_avax(cfg) -> float:
     w3 = make_w3(cfg)
     wei = w3.eth.get_balance(signer_address(cfg))
-    return w3.from_wei(wei, "ether")
+    return float(w3.from_wei(wei, "ether"))
 
 
 def block_number(cfg) -> int:
@@ -75,7 +72,8 @@ def submit_batch(cfg, root_hex: str, session_count: int) -> str:
     })
     signed = w3.eth.account.sign_transaction(tx, private_key=cfg.signer_key)
     txh = w3.eth.send_raw_transaction(signed.raw_transaction)
-    return "0x" + txh.hex() if not txh.hex().startswith("0x") else txh.hex()
+    h = txh.hex()
+    return h if h.startswith("0x") else "0x" + h
 
 
 def receipt(cfg, tx_hash: str):

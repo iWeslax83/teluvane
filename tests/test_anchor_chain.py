@@ -31,8 +31,10 @@ def test_submit_batch_signs_and_sends():
          patch.object(anchor_chain, "signer_address", return_value="0xSigner"):
         txh = anchor_chain.submit_batch(CFG, "0x" + "cd" * 32, 3)
     assert txh == "0x" + "ab" * 32
+    assert w3.eth.send_raw_transaction.call_args[0][0] == b"raw"
     contract.functions.anchorBatch.assert_called_once()
     args = contract.functions.anchorBatch.call_args[0]
+    assert len(args[0]) == 32
     assert args[1] == 3
 
 
