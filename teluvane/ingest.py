@@ -25,7 +25,7 @@ from .auditlock import audited_run
 from .logging_config import configure_logging
 from .evidence import build_evidence_pack, build_evidence_pdf
 from .billing import create_checkout_session, create_portal_session, handle_webhook, org_plan
-from .scheduler import get_schedule, set_schedule, run_due_schedules, TICK_INTERVAL_SECONDS
+from .scheduler import get_schedule, set_schedule, run_due_schedules, run_anchor_cycle, TICK_INTERVAL_SECONDS
 from .usage import (HOSTED_AUDIT_MONTHLY_LIMIT, hosted_audit_count,
                      increment_hosted_audit_usage, under_hosted_audit_limit)
 
@@ -63,6 +63,10 @@ def _scheduler_loop() -> None:
             run_due_schedules(store, FRAMEWORK_PACKS, hosted_api_key=os.environ.get("TELUVANE_HOSTED_ANTHROPIC_KEY"))
         except Exception:
             logging.exception("scheduled tribunal tick failed")
+        try:
+            run_anchor_cycle()
+        except Exception:
+            logging.exception("anchor tick failed")
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
