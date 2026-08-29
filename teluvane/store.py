@@ -6,15 +6,20 @@ from .schema import Event, Verdict
 from .db import get_pool
 from .cost import compute_cost
 
-def _event_digest(prev_hash: str, e: Event) -> str:
-    # org_id is part of the digest so an event is cryptographically bound to its tenant.
-    payload = json.dumps({
+def _event_canonical(prev_hash: str, e: Event) -> str:
+    # The exact string the hash chain digests. org_id is included so an event is
+    # cryptographically bound to its tenant. Output bytes are frozen: changing
+    # this invalidates every stored chain.
+    return json.dumps({
         "prev": prev_hash, "org_id": e.org_id, "agent_id": e.agent_id,
         "session_id": e.session_id, "kind": e.kind, "intent": e.intent,
         "tool": e.tool, "args": e.args, "output": e.output,
         "approved_by": e.approved_by, "ts": e.ts,
     }, sort_keys=True, ensure_ascii=False)
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _event_digest(prev_hash: str, e: Event) -> str:
+    return hashlib.sha256(_event_canonical(prev_hash, e).encode("utf-8")).hexdigest()
 
 class Store:
     """Tenant-scoped Postgres store. EVERY public method takes org_id as its first argument;
@@ -107,6 +112,18 @@ class Store:
                 return False
             prev = e.hash
         return True
+
+    def canonical_events(self, org_id: str, session_id: str) -> list[dict]:
+        """Per-event digest inputs for independent (browser) verification. The
+        caller hashes `canonical` and checks it equals `hash`, then checks the
+        chain links, without trusting this server to have hashed correctly."""
+        out = []
+        prev = "GENESIS"
+        for e in self.events(org_id, session_id):
+            out.append({"seq": e.seq, "prev_hash": prev, "hash": e.hash,
+                        "canonical": _event_canonical(prev, e)})
+            prev = e.hash
+        return out
 
     def violation_trend(self, org_id: str, days: int = 30) -> list[dict]:
         """Confirmed-violation counts per UTC day for the last `days` days, oldest first,
