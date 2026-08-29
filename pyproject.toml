@@ -23,10 +23,11 @@ dependencies = [
     "slowapi>=0.1.9",
     "weasyprint>=62.0",
     "mcp>=1.2,<2.0",
+    "web3>=7.0",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "respx>=0.21"]
+dev = ["pytest>=8.0", "respx>=0.21", "py-solc-x>=2.0"]
 
 [project.scripts]
 teluvane-mcp = "teluvane.mcp_server:main"
