@@ -5,7 +5,8 @@ import { rootFromProof } from "@/lib/merkle";
 import { verifyChain, type ChainEvent } from "@/lib/chainVerify";
 import { createPublicClient, http } from "viem";
 import { avalancheFuji } from "viem/chains";
-import { decideState, DOT, type AnchorState } from "@/lib/anchorState";
+import { decideState, type AnchorState } from "@/lib/anchorState";
+import AnchorResult from "@/components/AnchorResult";
 
 // The one contract call the browser makes for itself: anchoredAt(bytes32 root)
 // returns the block timestamp the root was recorded at, or 0 if it never was.
@@ -151,9 +152,6 @@ export default function AnchorPanel({ token, sessionId }: { token: string; sessi
     };
   }, [token, sessionId]);
 
-  const kind = view?.state.kind ?? "not-anchored";
-  const accent = "#1f4f7a";
-
   return (
     <section aria-label="On-chain anchor" style={{ margin: "1.5rem 0" }}>
       <p
@@ -171,69 +169,13 @@ export default function AnchorPanel({ token, sessionId }: { token: string; sessi
       {view === null ? (
         <p style={{ margin: 0, color: "#666" }}>Checking Avalanche Fuji&hellip;</p>
       ) : (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            gap: 10,
-            border: `1px solid ${kind === "verified" ? DOT.verified : "#ddd"}`,
-            borderLeftWidth: 3,
-            borderLeftColor: DOT[kind],
-            padding: "12px 14px",
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              flex: "none",
-              width: 10,
-              height: 10,
-              borderRadius: "50%",
-              background: DOT[kind],
-              transform: "translateY(1px)",
-            }}
-          />
-          <div style={{ fontSize: 16, lineHeight: 1.55 }}>
-            {view.state.kind === "not-anchored" && (
-              <span>This session has not been anchored on-chain yet.</span>
-            )}
-            {view.state.kind === "pending" && (
-              <span>
-                Anchor transaction submitted. Waiting for Avalanche to confirm it.
-              </span>
-            )}
-            {view.state.kind === "verified" && (
-              <span>
-                <strong>Verified.</strong> The Merkle root for this session is
-                recorded on Avalanche Fuji, timestamped{" "}
-                {new Date(view.onchainTs * 1000).toISOString()}
-                {view.block != null ? `, block ${view.block}` : ""}.{" "}
-                {view.tx && view.txUrl && (
-                  <a href={view.txUrl} target="_blank" rel="noreferrer" style={{ color: accent }}>
-                    {view.tx}
-                  </a>
-                )}
-              </span>
-            )}
-            {view.state.kind === "mismatch" && (
-              <span>
-                <strong>Does not verify.</strong> TELUVANE lists this session as
-                anchored, but the independent check does not match: {view.state.why}.
-              </span>
-            )}
-            {view.state.kind === "rpc-unreachable" && (
-              <span>
-                Could not reach an Avalanche RPC to read the anchor. Try again shortly.
-              </span>
-            )}
-            {view.state.kind === "proof-missing" && (
-              <span>
-                The anchor record is incomplete (no Merkle proof), so it cannot be
-                checked independently.
-              </span>
-            )}
-          </div>
-        </div>
+        <AnchorResult
+          state={view.state}
+          onchainTs={view.onchainTs}
+          block={view.block}
+          tx={view.tx}
+          txUrl={view.txUrl}
+        />
       )}
 
       {view?.serverStatus && (
