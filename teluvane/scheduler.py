@@ -6,6 +6,7 @@ skips ticks like any other in-process timer would. That tradeoff is what "automa
 without a separate worker/cron service, and is disclosed as such wherever this is documented."""
 from datetime import datetime, timedelta, timezone
 
+from . import anchor
 from .db import get_pool
 from .billing import org_plan
 from .byok import get_byok
@@ -14,6 +15,30 @@ from .auditlock import audited_run
 from .custom_rules import effective_pack
 
 TICK_INTERVAL_SECONDS = 60
+
+_last_anchor_run = None
+
+
+def _anchor_due(interval_minutes: int) -> bool:
+    """True at most once per `interval_minutes`; records the run time when it fires."""
+    global _last_anchor_run
+    now = datetime.now(timezone.utc)
+    if _last_anchor_run is None or (now - _last_anchor_run).total_seconds() >= interval_minutes * 60:
+        _last_anchor_run = now
+        return True
+    return False
+
+
+def run_anchor_cycle() -> None:
+    """One anchoring tick: reconcile in-flight batches every cycle, submit a new batch
+    when the batch interval is due. No-op unless on-chain anchoring is configured."""
+    cfg = anchor.chain_config()
+    if not cfg:
+        return
+    pool = get_pool()
+    anchor.reconcile_pending(pool, cfg)
+    if _anchor_due(cfg.batch_interval_minutes):
+        anchor.run_anchor_pass(pool, cfg)
 
 def get_schedule(org_id: str) -> dict:
     with get_pool().connection() as conn, conn.cursor() as cur:

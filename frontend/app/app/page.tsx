@@ -5,10 +5,16 @@ import { useSession } from "@/lib/useSession";
 import { apiFetch, apiFetchBlob } from "@/lib/api";
 import { useConfirm } from "@/lib/useConfirm";
 import TopNav from "@/components/TopNav";
+import AnchorPanel from "@/components/AnchorPanel";
+import { DOT, anchorRowKind } from "@/lib/anchorState";
 
 type Event = { seq: number; session_id: string; kind: string; tool?: string; intent: string };
 type Verdict = { rule_id: string; severity: string; rationale: string };
-type SessionRow = { session_id: string; events: number; last_ts: string };
+type SessionRow = { session_id: string; events: number; last_ts: string; anchor?: string };
+
+const ANCHOR_LABEL: Record<string, string> = {
+  mined: "anchored", failed: "anchor failed", submitted: "anchoring", pending: "anchoring",
+};
 
 const PAGE_SIZE = 25;
 
@@ -139,7 +145,19 @@ export default function AppPage() {
               <ul className="list">
                 {sessions.map(s => (
                   <li key={s.session_id} style={{ cursor: "pointer" }} onClick={() => load(s.session_id)}>
-                    <span><strong>{s.session_id}</strong> <span className="meta">{s.events} events</span></span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                      {s.anchor && s.anchor !== "none" && (
+                        <span
+                          aria-label={ANCHOR_LABEL[s.anchor] ?? s.anchor}
+                          title={ANCHOR_LABEL[s.anchor] ?? s.anchor}
+                          style={{
+                            flex: "none", width: 9, height: 9, borderRadius: "50%",
+                            background: DOT[anchorRowKind(s.anchor)],
+                          }}
+                        />
+                      )}
+                      <strong>{s.session_id}</strong> <span className="meta">{s.events} events</span>
+                    </span>
                     <span className="meta">{s.session_id === sessionId ? "▶ selected" : "open"}</span>
                   </li>
                 ))}
@@ -175,6 +193,8 @@ export default function AppPage() {
             {chain !== null && (
               <p><span className={`badge ${chain ? "ok" : "bad"}`}>{chain ? "chain intact" : "chain TAMPERED"}</span></p>
             )}
+
+            {sessionId && token && <AnchorPanel token={token} sessionId={sessionId} />}
 
             <div className="section-title"><h2>Events</h2><span className="muted small">{events.length}</span></div>
             {events.length === 0 ? <p className="empty">No events.</p> : (

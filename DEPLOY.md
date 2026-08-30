@@ -120,6 +120,96 @@ curl -s -X POST https://<your-service-name>.onrender.com/audit/live1 \
 
 ---
 
+## On-chain anchoring (Avalanche Fuji)
+
+Optional. When configured, the API periodically writes a Merkle root of recently
+settled Pro-plan session chains to a contract on Avalanche Fuji (testnet), giving
+each anchored session a tamper-evident, independently verifiable timestamp. The
+whole feature is inert until the `ANCHOR_*` backend env vars are set, so you can
+ship the rest of TELUVANE first and add this later.
+
+### 1. Create and fund a hot wallet
+
+```bash
+python -c "from eth_account import Account; a=Account.create(); print(a.address, a.key.hex())"
+```
+
+Keep the private key secret. This wallet only ever holds small amounts of test
+AVAX, but it is the contract owner and the only account allowed to write anchors.
+
+Fund the address from the Fuji C-Chain faucet at `https://faucet.avax.network/`
+(select "Fuji (C-Chain)"). A fraction of an AVAX covers thousands of anchor
+transactions.
+
+### 2. Deploy the registry contract
+
+```bash
+pip install -e ".[dev]"
+
+ANCHOR_RPC_URL="https://api.avax-test.network/ext/bc/C/rpc" \
+ANCHOR_SIGNER_PRIVATE_KEY="0x<hot-wallet-key>" \
+  python scripts/deploy_anchor.py
+```
+
+The script compiles `contracts/SessionAnchorRegistry.sol` with solc 0.8.24,
+deploys it from the signer key, and prints a line like
+`ANCHOR_CONTRACT_ADDRESS=0x...`. Save that address.
+
+### 3. Set backend env (Render)
+
+| Key | Value |
+|---|---|
+| `ANCHOR_RPC_URL` | `https://api.avax-test.network/ext/bc/C/rpc` (or your own Fuji node) |
+| `ANCHOR_CONTRACT_ADDRESS` | the address printed by `deploy_anchor.py` |
+| `ANCHOR_SIGNER_PRIVATE_KEY` | the hot-wallet key (same one used to deploy) |
+
+Optional tuning vars (defaults in parentheses; see `teluvane/anchor.py`):
+
+| Key | Default | Purpose |
+|---|---|---|
+| `ANCHOR_CHAIN_ID` | `43113` | Fuji C-Chain id |
+| `ANCHOR_MIN_SESSION_AGE_MINUTES` | `30` | how long a session must be quiet before it is eligible |
+| `ANCHOR_BATCH_INTERVAL_MINUTES` | `10` | how often the anchor pass runs |
+| `ANCHOR_CONFIRMATIONS` | `5` | confirmations before a batch counts as mined |
+| `ANCHOR_SUBMIT_TIMEOUT_MINUTES` | `30` | after this, an unmined batch is marked failed and re-anchored |
+| `ANCHOR_LOW_BALANCE_ALERT_AVAX` | `0.05` | a warning is logged when the signer balance drops below this |
+| `ANCHOR_MAX_FORCED_RUNS_PER_ORG_PER_MONTH` | `20` | cap on operator-forced anchor runs per org |
+| `ANCHOR_FORCED_RUN_COOLDOWN_MINUTES` | `5` | minimum gap between forced runs for one org |
+| `ANCHOR_EXPLORER_TX_URL` | `https://testnet.snowtrace.io/tx/` | prefix for explorer links in API responses |
+
+### 4. Set frontend env (Vercel)
+
+| Key | Value |
+|---|---|
+| `NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS` | same contract address |
+| `NEXT_PUBLIC_ANCHOR_RPC_URL` | optional read-only Fuji RPC for in-browser verification |
+| `NEXT_PUBLIC_ANCHOR_EXPLORER_TX_URL` | `https://testnet.snowtrace.io/tx/` |
+
+Leave all three blank to keep the anchor verification UI hidden.
+
+### 5. Verify it works
+
+From your local machine, with the three backend `ANCHOR_*` vars exported:
+
+```bash
+python scripts/anchor_smoke.py
+```
+
+It prints the signer address and balance, submits a throwaway batch, waits for it
+to mine, reads it back from the contract, and prints `OK`. This spends a little
+test AVAX and hits the live network, so it is a manual check only, never part of
+CI.
+
+### Rotation
+
+To rotate the signer, deploy a fresh contract with the new key
+(`python scripts/deploy_anchor.py`) and repoint `ANCHOR_CONTRACT_ADDRESS` (and the
+frontend `NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS`) at it. Anchors already written to
+the old contract stay valid and verifiable at the old address; only new batches
+go to the new one.
+
+---
+
 ## Local Docker
 
 ```bash

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "sync-vectors": "node scripts/sync-vectors.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",
@@ -15,7 +16,8 @@
     "@vercel/speed-insights": "^2.0.0",
     "next": "16.2.7",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "viem": "^2.56.0"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",

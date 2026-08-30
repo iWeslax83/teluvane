@@ -120,6 +120,24 @@ def test_usage_scoped_to_org(store):
     usage_b = store.usage("orgB", days=1)
     assert usage_b[0]["cost_usd"] == 0
 
+def test_sessions_anchor_field_defaults_to_none(store):
+    store.append("orgA", _ev(session_id="s1"))
+    assert store.sessions("orgA")[0]["anchor"] == "none"
+
+
+def test_sessions_anchor_field_reflects_batch_status(store):
+    from teluvane import anchor_store, merkle
+    for _ in range(2):
+        store.append("orgA", _ev(session_id="s1"))
+    head = store.events("orgA", "s1")[-1].hash
+    root, proofs = merkle.build_tree([("orgA", "s1", head)])
+    bid = anchor_store.insert_batch(store.pool, root, 43113, 1)
+    anchor_store.insert_session_anchor(store.pool, "orgA", "s1", 2, bid, head,
+                                       proofs[("orgA", "s1")])
+    anchor_store.mark_submitted(store.pool, bid, "0xtx")
+    assert store.sessions("orgA")[0]["anchor"] == "submitted"
+
+
 def test_sessions_pagination(store):
     for i in range(5):
         store.append("orgA", _ev(session_id=f"s{i}"))

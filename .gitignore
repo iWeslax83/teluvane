@@ -18,3 +18,8 @@ sdk-js/dist/
 # local tooling / session artifacts
 .playwright-mcp/
 /*.png
+
+# foundry (contracts/)
+contracts/lib/
+contracts/out/
+contracts/cache/

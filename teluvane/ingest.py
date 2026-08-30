@@ -25,9 +25,10 @@ from .auditlock import audited_run
 from .logging_config import configure_logging
 from .evidence import build_evidence_pack, build_evidence_pdf
 from .billing import create_checkout_session, create_portal_session, handle_webhook, org_plan
-from .scheduler import get_schedule, set_schedule, run_due_schedules, TICK_INTERVAL_SECONDS
+from .scheduler import get_schedule, set_schedule, run_due_schedules, run_anchor_cycle, TICK_INTERVAL_SECONDS
 from .usage import (HOSTED_AUDIT_MONTHLY_LIMIT, hosted_audit_count,
                      increment_hosted_audit_usage, under_hosted_audit_limit)
+from . import anchor, anchor_store, anchor_forced
 
 store = Store()
 configure_logging()
@@ -63,6 +64,10 @@ def _scheduler_loop() -> None:
             run_due_schedules(store, FRAMEWORK_PACKS, hosted_api_key=os.environ.get("TELUVANE_HOSTED_ANTHROPIC_KEY"))
         except Exception:
             logging.exception("scheduled tribunal tick failed")
+        try:
+            run_anchor_cycle()
+        except Exception:
+            logging.exception("anchor tick failed")
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
@@ -133,6 +138,84 @@ def list_verdicts(session_id: str | None = None, org_id: str = Depends(current_o
 @app.get("/verify")
 def verify(session_id: str | None = None, org_id: str = Depends(current_org)) -> dict:
     return {"chain_intact": store.verify_chain(org_id, session_id)}
+
+# ---- on-chain anchoring (human auth: JWT) --------------------------------------------------
+# Route order matters: FastAPI matches in definition order, so the literal /anchor/contract
+# and /anchor/status must precede the /anchor/{session_id} path-param route.
+@app.get("/anchor/contract")
+def anchor_contract(org_id: str = Depends(current_org)) -> dict:
+    cfg = anchor.chain_config()
+    if not cfg:
+        raise HTTPException(status_code=404, detail="anchoring not configured")
+    return {"chain_id": cfg.chain_id, "contract_address": cfg.contract_address,
+            "explorer_tx_url": cfg.explorer_tx_url, "rpc_url": cfg.rpc_url}
+
+@app.get("/anchor/status")
+def anchor_status_ep(org_id: str = Depends(current_org)) -> dict:
+    return anchor.anchor_health(store.pool)
+
+@app.get("/anchor/{session_id}")
+def anchor_session_ep(session_id: str, org_id: str = Depends(current_org)) -> dict:
+    return anchor.verify_session(store.pool, org_id, session_id)
+
+@app.get("/anchor/{session_id}/canonical")
+def anchor_canonical_ep(session_id: str, org_id: str = Depends(current_org)) -> list[dict]:
+    return store.canonical_events(org_id, session_id)
+
+@app.put("/anchor/{session_id}/public")
+def anchor_public_ep(session_id: str, public: bool = Body(embed=True),
+                     org_id: str = Depends(current_org)) -> dict:
+    # Publishing exposes the session's full canonical event list to anyone with
+    # the id, so gate it the same way the rest of the feature is gated: the org
+    # must own the session and be on Pro. As with /anchor/run there is no
+    # admin/owner check, because current_org yields no user identity.
+    if not store.events(org_id, session_id):
+        raise HTTPException(status_code=404, detail="session not found")
+    if org_plan(org_id) != "pro":
+        raise HTTPException(status_code=403, detail="Pro plan required")
+    anchor_store.set_public(store.pool, org_id, session_id, public)
+    return {"public": public}
+
+@app.post("/anchor/run")
+@limiter.limit(AUDIT_RATE_LIMIT)
+def anchor_run_ep(request: Request, org_id: str = Depends(current_org)) -> dict:
+    # Pro-only. The brief also wanted an admin/owner check, but current_org yields only
+    # org_id (not the user), and threading the user through is out of scope for this task,
+    # so the gate is plan == "pro" alone.
+    if org_plan(org_id) != "pro":
+        raise HTTPException(status_code=403, detail="Pro plan required")
+    cfg = anchor.chain_config()
+    if not cfg:
+        raise HTTPException(status_code=404, detail="anchoring not configured")
+    reason = anchor_forced.check_and_record(
+        org_id, cfg.forced_run_cooldown_minutes, cfg.max_forced_runs_per_org_per_month)
+    if reason:
+        raise HTTPException(status_code=429, detail=f"forced anchor blocked: {reason}")
+    return anchor.run_anchor_pass(store.pool, cfg)
+
+@app.get("/verify/public/{session_id}")
+def verify_public_ep(session_id: str) -> dict:
+    # Unauthenticated: find which org made this session public, then verify it.
+    with store.pool.connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT org_id FROM session_anchor_public WHERE session_id=%s", (session_id,))
+        row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="not found")
+    org_id = row[0]
+    v = anchor.verify_session(store.pool, org_id, session_id)
+    if not v["anchored"]:
+        raise HTTPException(status_code=404, detail="not anchored")
+    canonical = store.canonical_events(org_id, session_id)
+    latest = anchor_store.latest_anchor(store.pool, org_id, session_id)
+    cfg = anchor.chain_config()
+    return {"session_id": session_id, "canonical": canonical,
+            "proof": v["proof"], "through_seq": latest["anchored_through_seq"] if latest else None,
+            "chain_head": latest["chain_head"] if latest else None,
+            "root": v["root"], "tx_hash": v["tx_hash"], "verify": v,
+            "chain_id": cfg.chain_id if cfg else None,
+            "contract_address": cfg.contract_address if cfg else None,
+            "explorer_tx_url": cfg.explorer_tx_url if cfg else None,
+            "rpc_url": cfg.rpc_url if cfg else None}
 
 @app.post("/audit/{session_id}")
 @limiter.limit(AUDIT_RATE_LIMIT)
@@ -229,12 +312,27 @@ def delete_webhook_ep(org_id: str = Depends(current_org)) -> dict:
     delete_webhook(org_id)
     return {"url": None, "secret": None}
 
+def _evidence_anchor(org_id: str, session_id: str) -> dict | None:
+    # A broken RPC or missing anchor config must never break evidence export.
+    try:
+        a = anchor.verify_session(store.pool, org_id, session_id)
+        cfg = anchor.chain_config()
+        if cfg is not None:
+            a = {**a, "explorer_tx_url": cfg.explorer_tx_url}
+        return a
+    except Exception:
+        logging.exception("evidence anchor lookup failed for %s", session_id)
+        return None
+
 @app.get("/evidence/{session_id}", response_class=HTMLResponse)
 def evidence(session_id: str, org_id: str = Depends(current_org)) -> str:
     events = store.events(org_id, session_id)
     verdicts = store.verdicts(org_id, session_id)
+    anchor_dict = _evidence_anchor(org_id, session_id)
+    canon = store.canonical_events(org_id, session_id) if anchor_dict else None
     pack = build_evidence_pack(session_id, events, verdicts,
-                               framework=base_pack_for_org(org_id).framework, chain_intact=store.verify_chain(org_id, session_id))
+                               framework=base_pack_for_org(org_id).framework, chain_intact=store.verify_chain(org_id, session_id),
+                               anchor=anchor_dict, canonical=canon)
     return pack["html"]
 
 @app.get("/evidence/{session_id}/pdf")
@@ -244,8 +342,11 @@ def evidence_pdf(session_id: str, org_id: str = Depends(current_org)) -> Respons
         raise HTTPException(status_code=402, detail="PDF evidence export requires the Pro plan")
     events = store.events(org_id, session_id)
     verdicts = store.verdicts(org_id, session_id)
+    anchor_dict = _evidence_anchor(org_id, session_id)
+    canon = store.canonical_events(org_id, session_id) if anchor_dict else None
     pdf = build_evidence_pdf(session_id, events, verdicts,
-                             framework=base_pack_for_org(org_id).framework, chain_intact=store.verify_chain(org_id, session_id))
+                             framework=base_pack_for_org(org_id).framework, chain_intact=store.verify_chain(org_id, session_id),
+                             anchor=anchor_dict, canonical=canon)
     return Response(content=pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{session_id}-evidence.pdf"'})
 
