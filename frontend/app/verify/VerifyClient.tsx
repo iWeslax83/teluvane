@@ -44,6 +44,16 @@ type Result = {
 const ACCENT = "#1f4f7a";
 const API = process.env.NEXT_PUBLIC_API_URL ?? "";
 
+// Pinned at build time. The evidence-pack path must NOT trust network/contract
+// fields from the pasted JSON (an attacker could point the on-chain read at
+// their own contract or slip a hostile explorer URL into the tx link), so it
+// uses these instead. The session-id path keeps the values from the
+// server-controlled /verify/public/{id} response.
+const ANCHOR_CONTRACT = process.env.NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS || undefined;
+const ANCHOR_RPC = process.env.NEXT_PUBLIC_ANCHOR_RPC_URL || undefined;
+const EXPLORER =
+  process.env.NEXT_PUBLIC_ANCHOR_EXPLORER_TX_URL || "https://testnet.snowtrace.io/tx/";
+
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "0.6rem 0.7rem",
@@ -199,11 +209,10 @@ export default function VerifyClient() {
           null,
         root,
         tx_hash: (parsed.tx_hash as string) ?? (anchor.tx_hash as string) ?? null,
-        contract_address:
-          (parsed.contract_address as string) ?? (anchor.contract_address as string) ?? undefined,
-        explorer_tx_url:
-          (parsed.explorer_tx_url as string) ?? (anchor.explorer_tx_url as string) ?? undefined,
-        rpc_url: (parsed.rpc_url as string) ?? undefined,
+        // Pinned to build-time constants, never read from the pasted pack.
+        contract_address: ANCHOR_CONTRACT,
+        explorer_tx_url: EXPLORER,
+        rpc_url: ANCHOR_RPC,
         verify: {
           org_id: (anchor.org_id as string) ?? (parsed.org_id as string) ?? "",
           status: (anchor.status as string) ?? undefined,

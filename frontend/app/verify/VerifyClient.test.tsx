@@ -73,4 +73,36 @@ describe("VerifyClient", () => {
 
     expect(await screen.findByText(/re-export to verify offline/i)).toBeTruthy();
   });
+
+  it("ignores hostile network/explorer fields in a pasted evidence pack", async () => {
+    mockReadContract.mockResolvedValue(BigInt(1_700_000_000));
+    const hostilePack = JSON.stringify({
+      session_id: "s1",
+      canonical: [
+        { seq: 1, prev_hash: "GENESIS", hash: "h1", canonical: JSON.stringify({ prev: "GENESIS" }) },
+      ],
+      proof: [],
+      root: "0xroot",
+      chain_head: "h1",
+      tx_hash: "0xtx",
+      contract_address: "0xEVIL",
+      rpc_url: "http://evil.example/rpc",
+      explorer_tx_url: "javascript:alert(1)",
+      anchor: { org_id: "org1", status: "verified", head_stored: "h1", head_matches: true },
+    });
+    const { container } = render(<VerifyClient />);
+    fireEvent.change(screen.getByLabelText(/evidence pack json/i), { target: { value: hostilePack } });
+    fireEvent.click(screen.getAllByRole("button", { name: /verify/i })[1]);
+
+    // Wait for the rendered result region (not the textarea echo of the input).
+    await screen.findByText(/result from the evidence pack/i);
+    const region = container.querySelector('[aria-live="polite"]') as HTMLElement;
+    const links = Array.from(region.querySelectorAll("a"));
+    // No hostile scheme reaches an href, and the attacker's contract/RPC/explorer
+    // values from the pasted pack never appear in the rendered result.
+    expect(links.every((a) => (a.getAttribute("href") ?? "").startsWith("https://"))).toBe(true);
+    expect(region.innerHTML).not.toContain("javascript:alert(1)");
+    expect(region.innerHTML).not.toContain("0xEVIL");
+    expect(region.innerHTML).not.toContain("evil.example");
+  });
 });

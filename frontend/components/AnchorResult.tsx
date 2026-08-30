@@ -23,6 +23,10 @@ export default function AnchorResult({
   txUrl = "",
 }: AnchorResultProps) {
   const kind = state.kind;
+  // Only ever link out over https. txUrl is built from an explorer prefix + a tx
+  // hash; on the public verify page the prefix can originate from user-pasted
+  // JSON, so a "javascript:" or other hostile scheme must never reach an href.
+  const safeTxUrl = typeof txUrl === "string" && txUrl.startsWith("https://") ? txUrl : null;
 
   return (
     <div
@@ -59,11 +63,14 @@ export default function AnchorResult({
             <strong>Verified.</strong> The Merkle root for this session is recorded on
             Avalanche Fuji, timestamped {new Date(onchainTs * 1000).toISOString()}
             {block != null ? `, block ${block}` : ""}.{" "}
-            {tx && txUrl && (
-              <a href={txUrl} target="_blank" rel="noreferrer" style={{ color: ACCENT }}>
-                {tx}
-              </a>
-            )}
+            {tx &&
+              (safeTxUrl ? (
+                <a href={safeTxUrl} target="_blank" rel="noreferrer" style={{ color: ACCENT }}>
+                  {tx}
+                </a>
+              ) : (
+                <span>{tx}</span>
+              ))}
           </span>
         )}
         {state.kind === "mismatch" && (
