@@ -71,7 +71,7 @@ def _render_html(session_id, framework, summary, violations, events, anchor=None
     chain = "&#9989; intact" if summary["chain_intact"] else "&#10060; TAMPERED"
     anchor_html = _render_anchor_html(anchor)
     return f"""<!doctype html><meta charset=utf-8>
-<title>Evidence Pack — {_html.escape(session_id)}</title>
+<title>Evidence Pack: {_html.escape(session_id)}</title>
 <style>body{{font-family:system-ui;margin:2rem;color:#1a1714}}
 table{{border-collapse:collapse;width:100%;margin:1rem 0}}
 td,th{{border:1px solid #ccc;padding:6px;text-align:left;font-size:14px}}

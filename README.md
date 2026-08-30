@@ -30,7 +30,7 @@ ingestion, LemonSqueezy billing, and a Postgres-backed store, not a single-user 
 |---|---|
 | **Recorder** | Agents POST events (`llm_call`, `tool_call`, `tool_result`) to the API using an org's API key. Each event is SHA-256 hash-chained to the previous one within its session. |
 | **Tribunal** | Runs against the merged policy pack (built-in EU AI Act rules plus any custom rules an org has added). Without an Anthropic key it uses a deterministic keyword detector; with one, a LangGraph fan-out of Claude "lens" checks feeds a consensus judge. |
-| **Automated runs** | Pro orgs can put the tribunal on a timer instead of clicking "Run audit" — see Settings in the dashboard. |
+| **Automated runs** | Pro orgs can put the tribunal on a timer instead of clicking "Run audit" (see Settings in the dashboard). |
 | **Evidence pack** | Exports a self-contained report (HTML on every plan, PDF export on Pro) with the full event log, verdict table, chain-integrity status, and framework citations. |
 
 On Pro plans, finalized sessions are also batched into a Merkle tree and their root is written to the `SessionAnchorRegistry` contract on Avalanche Fuji. Only the root hash and a session count go on chain, never event content or personal data. Once a session is anchored, anyone can recompute its chain head and Merkle root from a copy of the event log and check it against the on-chain record at [teluvane.com/verify](https://teluvane.com/verify), with no TELUVANE account and without trusting our database.
@@ -39,12 +39,12 @@ On Pro plans, finalized sessions are also batched into a Merkle tree and their r
 
 ## Architecture
 
-- **Frontend** — Next.js dashboard on Vercel. Supabase handles auth (email/password); the
+- **Frontend**: Next.js dashboard on Vercel. Supabase handles auth (email/password); the
   dashboard talks to the API with the user's Supabase JWT.
-- **API** — FastAPI on Render (`Dockerfile` at repo root), backed by Postgres (Supabase). Every
+- **API**: FastAPI on Render (`Dockerfile` at repo root), backed by Postgres (Supabase). Every
   table is org-scoped; `Store._assert_scoped` makes an un-scoped query a hard error by
   construction, not a convention.
-- **Billing** — LemonSqueezy subscriptions gate the Pro-only features (custom policy rules, PDF
+- **Billing**: LemonSqueezy subscriptions gate the Pro-only features (custom policy rules, PDF
   export, scheduled tribunal runs, a hosted Anthropic key so you don't need your own).
 
 ```mermaid
@@ -122,9 +122,9 @@ single auditable session.
 
 For agents that aren't MCP clients, record events directly against `/events`:
 
-- **Python** — `teluvane.recorder.TeluvaneRecorder` (ships with `pip install -e .`, same package
+- **Python**: `teluvane.recorder.TeluvaneRecorder` (ships with `pip install -e .`, same package
   as the API and MCP server).
-- **JS/TS** — `@teluvane/sdk` in [`sdk-js/`](sdk-js/), for Node and browser agents.
+- **JS/TS**: `@teluvane/sdk` in [`sdk-js/`](sdk-js/), for Node and browser agents.
 
 Both take an `agent_id`, `session_id`, API key, and record `llm_call` / `tool_call` /
 `tool_result` steps. Pass `model` + input/output token counts on `llm_call` to get cost
@@ -136,7 +136,7 @@ table for known models; unknown models are recorded with no computed cost).
 ## Tests
 
 ```bash
-# backend — needs a Postgres reachable at TEST_DATABASE_URL (defaults to localhost:5432/teluvane_test)
+# backend: needs a Postgres reachable at TEST_DATABASE_URL (defaults to localhost:5432/teluvane_test)
 pytest -v
 
 # frontend

@@ -57,7 +57,7 @@ The last row is an honest limitation of point-in-time anchoring.
 You need: a copy of the session's canonical events (the exact strings TELUVANE
 hashed, plus `seq`, `prev_hash`, `hash`), the Merkle proof for the session, and
 the batch's root. All three are in an exported evidence pack (`pack["json"]["canonical"]`,
-and `pack["json"]["anchor"]`), or from `GET /events/{session_id}/canonical` plus
+and `pack["json"]["anchor"]`), or from `GET /anchor/{session_id}/canonical` plus
 `GET /anchor/{session_id}` if you have API access.
 
 1. **Recompute each event digest.** For every canonical event, check
@@ -106,6 +106,8 @@ the whole feature is inert: no batches are built, no errors are raised.
 | `ANCHOR_CONFIRMATIONS` | `5` | Confirmations before a batch is marked mined |
 | `ANCHOR_SUBMIT_TIMEOUT_MINUTES` | `30` | Mark a submitted batch failed if unmined this long |
 | `ANCHOR_LOW_BALANCE_ALERT_AVAX` | `0.05` | Warn when signer balance drops below this |
+| `ANCHOR_MAX_FORCED_RUNS_PER_ORG_PER_MONTH` | `20` | Cap on manual `POST /anchor/run` calls per org per calendar month |
+| `ANCHOR_FORCED_RUN_COOLDOWN_MINUTES` | `5` | Minimum gap between one org's manual `POST /anchor/run` calls |
 | `ANCHOR_EXPLORER_TX_URL` | `https://testnet.snowtrace.io/tx/` | Base URL for tx links |
 
 Frontend (all optional; the `/verify` page and `AnchorPanel` normally read
