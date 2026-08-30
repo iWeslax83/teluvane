@@ -304,12 +304,25 @@ def delete_webhook_ep(org_id: str = Depends(current_org)) -> dict:
     delete_webhook(org_id)
     return {"url": None, "secret": None}
 
+def _evidence_anchor(org_id: str, session_id: str) -> dict | None:
+    # A broken RPC or missing anchor config must never break evidence export.
+    try:
+        a = anchor.verify_session(store.pool, org_id, session_id)
+        cfg = anchor.chain_config()
+        if cfg is not None:
+            a = {**a, "explorer_tx_url": cfg.explorer_tx_url}
+        return a
+    except Exception:
+        logging.exception("evidence anchor lookup failed for %s", session_id)
+        return None
+
 @app.get("/evidence/{session_id}", response_class=HTMLResponse)
 def evidence(session_id: str, org_id: str = Depends(current_org)) -> str:
     events = store.events(org_id, session_id)
     verdicts = store.verdicts(org_id, session_id)
     pack = build_evidence_pack(session_id, events, verdicts,
-                               framework=base_pack_for_org(org_id).framework, chain_intact=store.verify_chain(org_id, session_id))
+                               framework=base_pack_for_org(org_id).framework, chain_intact=store.verify_chain(org_id, session_id),
+                               anchor=_evidence_anchor(org_id, session_id))
     return pack["html"]
 
 @app.get("/evidence/{session_id}/pdf")
@@ -320,7 +333,8 @@ def evidence_pdf(session_id: str, org_id: str = Depends(current_org)) -> Respons
     events = store.events(org_id, session_id)
     verdicts = store.verdicts(org_id, session_id)
     pdf = build_evidence_pdf(session_id, events, verdicts,
-                             framework=base_pack_for_org(org_id).framework, chain_intact=store.verify_chain(org_id, session_id))
+                             framework=base_pack_for_org(org_id).framework, chain_intact=store.verify_chain(org_id, session_id),
+                             anchor=_evidence_anchor(org_id, session_id))
     return Response(content=pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{session_id}-evidence.pdf"'})
 
