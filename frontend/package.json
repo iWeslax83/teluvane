@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "sync-vectors": "node scripts/sync-vectors.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",

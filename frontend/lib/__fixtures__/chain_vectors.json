@@ -1,0 +1,22 @@
+{
+  "events": [
+    {
+      "seq": 1,
+      "prev_hash": "GENESIS",
+      "hash": "f24d630b3c095f77a4302af9ff03e70a42e2384a81a1a7bb8001a52040398e58",
+      "canonical": "{\"agent_id\": \"a\", \"approved_by\": null, \"args\": {}, \"intent\": \"step 0\", \"kind\": \"llm_call\", \"org_id\": \"org1\", \"output\": \"\", \"prev\": \"GENESIS\", \"session_id\": \"s1\", \"tool\": null, \"ts\": \"2026-08-29T19:26:58.860246+00:00\"}"
+    },
+    {
+      "seq": 2,
+      "prev_hash": "f24d630b3c095f77a4302af9ff03e70a42e2384a81a1a7bb8001a52040398e58",
+      "hash": "392bb5ea44d40e9f776432420d7c09557e473d015362fb6ed73f6df7057d025e",
+      "canonical": "{\"agent_id\": \"a\", \"approved_by\": null, \"args\": {}, \"intent\": \"step 1\", \"kind\": \"llm_call\", \"org_id\": \"org1\", \"output\": \"\", \"prev\": \"f24d630b3c095f77a4302af9ff03e70a42e2384a81a1a7bb8001a52040398e58\", \"session_id\": \"s1\", \"tool\": null, \"ts\": \"2026-08-29T19:26:58.869646+00:00\"}"
+    },
+    {
+      "seq": 3,
+      "prev_hash": "392bb5ea44d40e9f776432420d7c09557e473d015362fb6ed73f6df7057d025e",
+      "hash": "197cb575b48899689ed6dd54ec4456184dbdb2e35ab78d4b9113a678ceaca342",
+      "canonical": "{\"agent_id\": \"a\", \"approved_by\": null, \"args\": {}, \"intent\": \"step 2\", \"kind\": \"llm_call\", \"org_id\": \"org1\", \"output\": \"\", \"prev\": \"392bb5ea44d40e9f776432420d7c09557e473d015362fb6ed73f6df7057d025e\", \"session_id\": \"s1\", \"tool\": null, \"ts\": \"2026-08-29T19:26:58.879084+00:00\"}"
+    }
+  ]
+}
