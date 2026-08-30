@@ -4,13 +4,15 @@ from .schema import Event, Verdict
 
 def build_evidence_pack(session_id: str, events: list[Event], verdicts: list[Verdict],
                         framework: str, chain_intact: bool,
-                        anchor: dict | None = None) -> dict:
+                        anchor: dict | None = None,
+                        canonical: list[dict] | None = None) -> dict:
     violations = [v for v in verdicts if v.violation]
     summary = {"events": len(events), "violations": len(violations),
                "chain_intact": chain_intact,
                "highest_severity": _highest_sev(violations)}
     js = {"session_id": session_id, "framework": framework, "summary": summary,
           "anchor": anchor,
+          "canonical": canonical,
           "violations": [v.model_dump() for v in violations],
           "events": [e.model_dump() for e in events]}
     return {"json": js, "html": _render_html(session_id, framework, summary,
@@ -18,11 +20,13 @@ def build_evidence_pack(session_id: str, events: list[Event], verdicts: list[Ver
 
 def build_evidence_pdf(session_id: str, events: list[Event], verdicts: list[Verdict],
                        framework: str, chain_intact: bool,
-                       anchor: dict | None = None) -> bytes:
+                       anchor: dict | None = None,
+                       canonical: list[dict] | None = None) -> bytes:
     # Imported lazily: weasyprint pulls in cairo/pango bindings that only the PDF export
     # path needs, so the rest of the API can boot even if that native stack is unavailable.
     from weasyprint import HTML
-    pack = build_evidence_pack(session_id, events, verdicts, framework, chain_intact, anchor)
+    pack = build_evidence_pack(session_id, events, verdicts, framework, chain_intact,
+                               anchor, canonical)
     return HTML(string=pack["html"]).write_pdf()
 
 _SEV_ORDER = {"low": 0, "medium": 1, "high": 2, "critical": 3}

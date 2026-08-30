@@ -320,9 +320,11 @@ def _evidence_anchor(org_id: str, session_id: str) -> dict | None:
 def evidence(session_id: str, org_id: str = Depends(current_org)) -> str:
     events = store.events(org_id, session_id)
     verdicts = store.verdicts(org_id, session_id)
+    anchor_dict = _evidence_anchor(org_id, session_id)
+    canon = store.canonical_events(org_id, session_id) if anchor_dict else None
     pack = build_evidence_pack(session_id, events, verdicts,
                                framework=base_pack_for_org(org_id).framework, chain_intact=store.verify_chain(org_id, session_id),
-                               anchor=_evidence_anchor(org_id, session_id))
+                               anchor=anchor_dict, canonical=canon)
     return pack["html"]
 
 @app.get("/evidence/{session_id}/pdf")
@@ -332,9 +334,11 @@ def evidence_pdf(session_id: str, org_id: str = Depends(current_org)) -> Respons
         raise HTTPException(status_code=402, detail="PDF evidence export requires the Pro plan")
     events = store.events(org_id, session_id)
     verdicts = store.verdicts(org_id, session_id)
+    anchor_dict = _evidence_anchor(org_id, session_id)
+    canon = store.canonical_events(org_id, session_id) if anchor_dict else None
     pdf = build_evidence_pdf(session_id, events, verdicts,
                              framework=base_pack_for_org(org_id).framework, chain_intact=store.verify_chain(org_id, session_id),
-                             anchor=_evidence_anchor(org_id, session_id))
+                             anchor=anchor_dict, canonical=canon)
     return Response(content=pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{session_id}-evidence.pdf"'})
 

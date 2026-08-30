@@ -38,3 +38,17 @@ def test_evidence_pack_with_anchor_shows_tx_and_privacy_line():
     assert "0xabc" in html
     assert "only hashes" in html.lower()
     assert pack["json"]["anchor"]["tx_hash"] == "0xdef"
+
+def test_evidence_pack_embeds_canonical_when_given():
+    events, verdicts = _sample()
+    canon = [{"seq": 1, "prev_hash": None, "hash": "abc",
+              "canonical": '{"prev": null, "kind": "tool_call"}'}]
+    pack = build_evidence_pack("s1", events, verdicts, framework="EU AI Act",
+                               chain_intact=True, canonical=canon)
+    assert pack["json"]["canonical"] == canon
+
+def test_evidence_pack_canonical_defaults_to_none():
+    events, verdicts = _sample()
+    pack = build_evidence_pack("s1", events, verdicts, framework="EU AI Act",
+                               chain_intact=True)
+    assert pack["json"]["canonical"] is None
