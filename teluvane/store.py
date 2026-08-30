@@ -178,4 +178,21 @@ class Store:
         with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
             cur.execute(sql, params + (limit, offset))
             rows = cur.fetchall()
-        return [{"session_id": r["session_id"], "events": r["events"], "last_ts": r["last_ts"]} for r in rows]
+        out = [{"session_id": r["session_id"], "events": r["events"], "last_ts": r["last_ts"]}
+               for r in rows]
+        ids = [r["session_id"] for r in out]
+        if ids:
+            anchor_status: dict[str, str] = {}
+            astmt = (
+                "SELECT sa.session_id, b.status FROM session_anchors sa "
+                "JOIN anchor_batches b ON b.id = sa.batch_id "
+                "WHERE sa.org_id=%s AND sa.session_id = ANY(%s) "
+                "ORDER BY sa.anchored_through_seq DESC")
+            self._assert_scoped(org_id, astmt)
+            with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(astmt, (org_id, ids))
+                for row in cur.fetchall():
+                    anchor_status.setdefault(row["session_id"], row["status"])
+            for r in out:
+                r["anchor"] = anchor_status.get(r["session_id"], "none")
+        return out
