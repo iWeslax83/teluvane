@@ -86,7 +86,8 @@ describe("AnchorPanel", () => {
     render(<AnchorPanel token="t" sessionId="s1" />);
 
     const link = await screen.findByRole("link", { name: /0xtx/i });
-    expect(link.getAttribute("href")).toBe("https://x/tx/0xtx");
+    // Built from the pinned EXPLORER constant, not the API's explorer_tx_url.
+    expect(link.getAttribute("href")).toBe("https://testnet.snowtrace.io/tx/0xtx");
     expect(screen.getByText(/recorded on Avalanche/i)).toBeTruthy();
     expect(screen.getByText(/block 9/i)).toBeTruthy();
     // The server's own verdict is shown, secondary.
@@ -112,14 +113,19 @@ describe("AnchorPanel", () => {
     expect(screen.queryByText(/recorded on Avalanche/i)).toBeNull();
   });
 
-  it("says it could not independently verify when nothing pins the contract", async () => {
+  it("says it could not independently verify when nothing pins the contract, even though the API serves a valid-looking one", async () => {
     cfg.contract = undefined;
-    api.contractAddress = undefined;
+    // The API still reports a real-looking contract on the right chain, and the
+    // contract would answer with a non-zero anchoredAt. None of it may be used.
+    api.chainId = 43113;
+    api.contractAddress = "0xC0";
+    mockReadContract.mockResolvedValue(BigInt(1_700_000_000));
     render(<AnchorPanel token="t" sessionId="s1" />);
 
     expect(await screen.findByText(/no pinned contract/i)).toBeTruthy();
     expect(mockReadContract).not.toHaveBeenCalled();
     expect(screen.queryByText(/Independent check, read from Avalanche/i)).toBeNull();
+    expect(screen.queryByText(/recorded on Avalanche/i)).toBeNull();
   });
 
   it("shows a mismatch when the root is absent on-chain", async () => {

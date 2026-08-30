@@ -91,10 +91,10 @@ async function runVerification(bundle: VerifyBundle, method: Method): Promise<Re
     if (bundle.chain_id != null && bundle.chain_id !== avalancheFuji.id) {
       return { ...base, state: { kind: "rpc-unreachable" } };
     }
-    // Pinned at build time where available. The API's address is only a
-    // fallback (and the evidence-pack path passes none at all, so a pasted pack
-    // can never redirect the read); the API's rpc_url is never used.
-    const address = ANCHOR_CONTRACT ?? bundle.contract_address;
+    // Pinned at build time only. The address in the bundle is never used: a
+    // compromised server (or a pasted pack) could otherwise redirect this read
+    // at a contract it controls and forge a "Verified" result. No pin -> unpinned.
+    const address = ANCHOR_CONTRACT;
     if (!address) {
       return { ...base, state: { kind: "unpinned" } };
     }
@@ -136,7 +136,7 @@ async function runVerification(bundle: VerifyBundle, method: Method): Promise<Re
       onchainTs: onchain !== null && onchain > BigInt(0) ? Number(onchain) : 0,
       block: bundle.verify.block_number ?? null,
       tx: bundle.tx_hash,
-      txUrl: (bundle.explorer_tx_url || "") + (bundle.tx_hash ?? ""),
+      txUrl: EXPLORER + (bundle.tx_hash ?? ""),
     };
   } catch {
     return { ...base, state: { kind: "rpc-unreachable" } };

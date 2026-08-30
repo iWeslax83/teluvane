@@ -6,7 +6,7 @@ import { verifyChain, type ChainEvent } from "@/lib/chainVerify";
 import { createPublicClient, http } from "viem";
 import { avalancheFuji } from "viem/chains";
 import { decideState, type AnchorState } from "@/lib/anchorState";
-import { ANCHOR_CONTRACT, ANCHOR_RPC } from "@/lib/anchorConfig";
+import { ANCHOR_CONTRACT, ANCHOR_RPC, EXPLORER } from "@/lib/anchorConfig";
 import AnchorResult from "@/components/AnchorResult";
 
 // The one contract call the browser makes for itself: anchoredAt(bytes32 root)
@@ -128,11 +128,10 @@ export default function AnchorPanel({ token, sessionId }: { token: string; sessi
           setView({ ...base, state: { kind: "rpc-unreachable" } });
           return;
         }
-        // Pinned at build time where available; the API's address is only a
-        // fallback, and its rpc_url is never used.
-        const address = (ANCHOR_CONTRACT ?? contract.contract_address) as
-          | `0x${string}`
-          | undefined;
+        // Pinned at build time only. The address the API reports is never used:
+        // a compromised server could otherwise point this read at a contract it
+        // controls and forge a "Verified" result. No pin -> the "unpinned" state.
+        const address = ANCHOR_CONTRACT as `0x${string}` | undefined;
         if (!address) {
           setView({ ...base, state: { kind: "unpinned" } });
           return;
@@ -172,7 +171,7 @@ export default function AnchorPanel({ token, sessionId }: { token: string; sessi
           ...base,
           state,
           onchainTs: onchain !== null && onchain > BigInt(0) ? Number(onchain) : 0,
-          txUrl: (contract.explorer_tx_url || "") + (status.tx_hash ?? ""),
+          txUrl: EXPLORER + (status.tx_hash ?? ""),
         });
       } catch {
         if (!cancelled) {

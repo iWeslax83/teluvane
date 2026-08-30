@@ -65,6 +65,7 @@ function verifySessionId(id: string) {
 
 describe("VerifyClient", () => {
   it("verifies a public session id and links the anchor transaction", async () => {
+    cfg.contract = "0xPINNED";
     mockReadContract.mockResolvedValue(BigInt(1_700_000_000));
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
@@ -77,7 +78,8 @@ describe("VerifyClient", () => {
 
     expect(await screen.findByText(/verified/i)).toBeTruthy();
     const link = await screen.findByRole("link", { name: /0xtx/i });
-    expect(link.getAttribute("href")).toBe("https://x/tx/0xtx");
+    // Built from the pinned EXPLORER constant, not the bundle's explorer_tx_url.
+    expect(link.getAttribute("href")).toBe("https://testnet.snowtrace.io/tx/0xtx");
   });
 
   it("reads the pinned contract address, not the one the API bundle reports", async () => {
@@ -105,14 +107,18 @@ describe("VerifyClient", () => {
     expect(mockReadContract).not.toHaveBeenCalled();
   });
 
-  it("says it could not independently verify when nothing pins the contract", async () => {
-    serve({ ...publicBundle, contract_address: undefined });
+  it("says it could not independently verify when nothing pins the contract, even though the bundle serves a valid-looking one", async () => {
+    // Pin unset; the bundle still carries a plausible contract address, the right
+    // chain id, and a readContract that would return a non-zero anchoredAt.
+    mockReadContract.mockResolvedValue(BigInt(1_700_000_000));
+    serve({ ...publicBundle, contract_address: "0xC0", chain_id: 43113 });
 
     render(<VerifyClient />);
     verifySessionId("s1");
 
     expect(await screen.findByText(/no pinned contract/i)).toBeTruthy();
     expect(mockReadContract).not.toHaveBeenCalled();
+    expect(screen.queryByText(/recorded on Avalanche/i)).toBeNull();
   });
 
   it("shows a no-record message when the public endpoint 404s", async () => {

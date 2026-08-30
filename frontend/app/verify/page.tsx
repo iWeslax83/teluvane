@@ -36,9 +36,19 @@ export default function VerifyPage() {
           exported from TELUVANE.
         </p>
         <p style={{ color: "#4a4540", lineHeight: 1.65, marginBottom: 0 }}>
-          The check recomputes the log&apos;s hash chain and Merkle root in your browser and reads the
-          anchor record straight from Avalanche Fuji. TELUVANE never sees the request and cannot
-          change the result.
+          {process.env.NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS ? (
+            <>
+              The check recomputes the log&apos;s hash chain and Merkle root in your browser and reads
+              the anchor record straight from Avalanche Fuji, from a contract address pinned into this
+              build. TELUVANE never sees the request and cannot change the result.
+            </>
+          ) : (
+            <>
+              This page recomputes the log&apos;s hash chain and Merkle root in your browser. For a
+              fully independent check, the deployment must pin the anchor contract address; this build
+              has not, so the result below also reflects what the TELUVANE API reports and says so.
+            </>
+          )}
         </p>
         <VerifyClient />
       </div>
