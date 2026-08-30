@@ -2,6 +2,21 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import VerifyClient from "./VerifyClient";
 
+// Mutable stand-in for the build-time pins so a single test can drop the pin.
+const cfg = vi.hoisted(() => ({
+  contract: undefined as string | undefined,
+  rpc: undefined as string | undefined,
+}));
+vi.mock("@/lib/anchorConfig", () => ({
+  get ANCHOR_CONTRACT() {
+    return cfg.contract;
+  },
+  get ANCHOR_RPC() {
+    return cfg.rpc;
+  },
+  EXPLORER: "https://testnet.snowtrace.io/tx/",
+}));
+
 vi.mock("@/lib/merkle", () => ({ rootFromProof: vi.fn(async () => "0xroot") }));
 vi.mock("@/lib/chainVerify", () => ({
   verifyChain: vi.fn(async () => ({ ok: true, head: "h1" })),
@@ -32,7 +47,21 @@ const publicBundle = {
 
 beforeEach(() => {
   mockReadContract.mockReset();
+  cfg.contract = undefined;
+  cfg.rpc = undefined;
 });
+
+function serve(bundle: unknown) {
+  globalThis.fetch = vi.fn(async () => ({
+    ok: true,
+    json: async () => bundle,
+  })) as unknown as typeof fetch;
+}
+
+function verifySessionId(id: string) {
+  fireEvent.change(screen.getByLabelText(/session id/i), { target: { value: id } });
+  fireEvent.click(screen.getAllByRole("button", { name: /verify/i })[0]);
+}
 
 describe("VerifyClient", () => {
   it("verifies a public session id and links the anchor transaction", async () => {
@@ -49,6 +78,41 @@ describe("VerifyClient", () => {
     expect(await screen.findByText(/verified/i)).toBeTruthy();
     const link = await screen.findByRole("link", { name: /0xtx/i });
     expect(link.getAttribute("href")).toBe("https://x/tx/0xtx");
+  });
+
+  it("reads the pinned contract address, not the one the API bundle reports", async () => {
+    cfg.contract = "0xPINNED";
+    mockReadContract.mockResolvedValue(BigInt(1_700_000_000));
+    serve({ ...publicBundle, contract_address: "0xEVIL", rpc_url: "http://evil.example/rpc" });
+
+    render(<VerifyClient />);
+    verifySessionId("s1");
+
+    expect(await screen.findByText(/verified/i)).toBeTruthy();
+    expect(mockReadContract).toHaveBeenCalledTimes(1);
+    expect(mockReadContract.mock.calls[0][0].address).toBe("0xPINNED");
+  });
+
+  it("does not verify when the API bundle reports a different chain id", async () => {
+    cfg.contract = "0xPINNED";
+    mockReadContract.mockResolvedValue(BigInt(1_700_000_000));
+    serve({ ...publicBundle, chain_id: 1 });
+
+    render(<VerifyClient />);
+    verifySessionId("s1");
+
+    expect(await screen.findByText(/could not reach an Avalanche RPC/i)).toBeTruthy();
+    expect(mockReadContract).not.toHaveBeenCalled();
+  });
+
+  it("says it could not independently verify when nothing pins the contract", async () => {
+    serve({ ...publicBundle, contract_address: undefined });
+
+    render(<VerifyClient />);
+    verifySessionId("s1");
+
+    expect(await screen.findByText(/no pinned contract/i)).toBeTruthy();
+    expect(mockReadContract).not.toHaveBeenCalled();
   });
 
   it("shows a no-record message when the public endpoint 404s", async () => {
@@ -75,6 +139,7 @@ describe("VerifyClient", () => {
   });
 
   it("ignores hostile network/explorer fields in a pasted evidence pack", async () => {
+    cfg.contract = "0xPINNED";
     mockReadContract.mockResolvedValue(BigInt(1_700_000_000));
     const hostilePack = JSON.stringify({
       session_id: "s1",
@@ -104,5 +169,6 @@ describe("VerifyClient", () => {
     expect(region.innerHTML).not.toContain("javascript:alert(1)");
     expect(region.innerHTML).not.toContain("0xEVIL");
     expect(region.innerHTML).not.toContain("evil.example");
+    expect(mockReadContract.mock.calls[0][0].address).toBe("0xPINNED");
   });
 });

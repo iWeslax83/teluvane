@@ -82,6 +82,13 @@ export default function AnchorResult({
         {state.kind === "rpc-unreachable" && (
           <span>Could not reach an Avalanche RPC to read the anchor. Try again shortly.</span>
         )}
+        {state.kind === "unpinned" && (
+          <span>
+            Could not independently verify (no pinned contract). This build has no
+            contract address to read from Avalanche, so the only thing shown here is
+            what the TELUVANE API reports.
+          </span>
+        )}
         {state.kind === "proof-missing" && (
           <span>
             The anchor record is incomplete (no Merkle proof), so it cannot be checked

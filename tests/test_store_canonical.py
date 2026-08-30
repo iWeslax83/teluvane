@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 import pathlib
 from teluvane.store import Store, _event_digest, _event_canonical
 from teluvane.schema import Event
@@ -32,5 +33,7 @@ def test_canonical_events_roundtrip(store):
         assert json.loads(r["canonical"])["prev"] == prev
         prev = r["hash"]
 
-    # emit the fixture for the TS port
-    VECTORS.write_text(json.dumps({"events": rows}, indent=2, ensure_ascii=False))
+    # Regenerate the fixture the TS port checks against only on request; a plain
+    # pytest run must not dirty the working tree.
+    if os.environ.get("REGEN_ANCHOR_VECTORS"):
+        VECTORS.write_text(json.dumps({"events": rows}, indent=2, ensure_ascii=False))

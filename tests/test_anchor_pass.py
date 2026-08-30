@@ -47,6 +47,59 @@ def test_empty_pending_is_a_noop(monkeypatch):
     assert res == {"anchored": 0, "root": None, "tx_hash": None, "skipped": "nothing-pending"}
 
 
+def test_failed_batch_does_not_wedge_a_reanchor_of_the_same_root(monkeypatch):
+    """A quiet session's leaf never changes, so re-anchoring after mark_failed
+    rebuilds the identical root. That must not raise a UniqueViolation."""
+    monkeypatch.setattr(anchor, "org_plan", lambda o: "pro")
+    _seed_pro_session("s3", 2)
+    with patch.object(anchor.anchor_chain, "submit_batch", return_value="0xtx1"):
+        first = anchor.run_anchor_pass(get_pool(), CFG)
+    assert first["anchored"] == 1
+    bid = anchor_store.latest_anchor(get_pool(), "org1", "s3")["batch_id"]
+
+    # tx timed out unmined: membership is dropped and the batch is failed
+    anchor_store.mark_failed(get_pool(), bid)
+    assert anchor_store.latest_anchor(get_pool(), "org1", "s3") is None
+
+    with patch.object(anchor.anchor_chain, "submit_batch", return_value="0xtx2"):
+        second = anchor.run_anchor_pass(get_pool(), CFG)
+    assert second["skipped"] is None
+    assert second["anchored"] == 1
+    assert second["root"] == first["root"]
+    row = anchor_store.latest_anchor(get_pool(), "org1", "s3")
+    assert row is not None
+    assert row["status"] == "submitted"
+    assert row["batch_id"] == bid
+
+
+def test_reanchor_of_a_mined_root_relinks_without_resubmitting(monkeypatch):
+    monkeypatch.setattr(anchor, "org_plan", lambda o: "pro")
+    _seed_pro_session("s4", 1)
+    with patch.object(anchor.anchor_chain, "submit_batch", return_value="0xtx1"):
+        anchor.run_anchor_pass(get_pool(), CFG)
+    bid = anchor_store.latest_anchor(get_pool(), "org1", "s4")["batch_id"]
+    anchor_store.mark_mined(get_pool(), bid, 42, 90000, 1, 6)
+    # drop membership only, leaving the mined batch in place
+    with get_pool().connection() as conn, conn.cursor() as cur:
+        cur.execute("DELETE FROM session_anchors WHERE batch_id=%s", (bid,))
+        conn.commit()
+
+    with patch.object(anchor.anchor_chain, "submit_batch") as sub:
+        res = anchor.run_anchor_pass(get_pool(), CFG)
+    sub.assert_not_called()
+    assert res["anchored"] == 1
+    assert anchor_store.latest_anchor(get_pool(), "org1", "s4")["status"] == "mined"
+
+
+def test_pass_error_is_swallowed_and_reported(monkeypatch):
+    monkeypatch.setattr(anchor, "org_plan", lambda o: "pro")
+    _seed_pro_session("s5", 1)
+    with patch.object(anchor.anchor_store, "insert_batch_with_anchors",
+                      side_effect=Exception("db down")):
+        res = anchor.run_anchor_pass(get_pool(), CFG)
+    assert res["skipped"] == "pass-error"
+
+
 def test_submit_failure_leaves_batch_pending_with_membership(monkeypatch):
     monkeypatch.setattr(anchor, "org_plan", lambda o: "pro")
     _seed_pro_session("s2", 1)

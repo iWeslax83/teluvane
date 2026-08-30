@@ -47,6 +47,28 @@ def test_read_anchored_at_returns_zero_when_unanchored():
         assert anchor_chain.read_anchored_at(CFG, "0x" + "00" * 32) == 0
 
 
+def test_read_anchored_at_caches_nonzero_and_requeries_zero():
+    anchor_chain._ANCHORED_AT_CACHE.clear()
+    w3 = _fake_w3()
+    contract = MagicMock()
+    call = contract.functions.anchoredAt.return_value.call
+    call.return_value = 1_700_000_000
+    w3.eth.contract.return_value = contract
+    root = "0x" + "cd" * 32
+    with patch.object(anchor_chain, "make_w3", return_value=w3):
+        assert anchor_chain.read_anchored_at(CFG, root) == 1_700_000_000
+        assert anchor_chain.read_anchored_at(CFG, root) == 1_700_000_000
+    assert call.call_count == 1  # second read served from the process-local cache
+
+    zero_root = "0x" + "ef" * 32
+    call.return_value = 0
+    with patch.object(anchor_chain, "make_w3", return_value=w3):
+        assert anchor_chain.read_anchored_at(CFG, zero_root) == 0
+        assert anchor_chain.read_anchored_at(CFG, zero_root) == 0
+    assert call.call_count == 3  # zero is never cached
+    anchor_chain._ANCHORED_AT_CACHE.clear()
+
+
 def test_receipt_none_when_not_mined():
     w3 = _fake_w3()
     w3.eth.get_transaction_receipt.side_effect = Exception("not found")

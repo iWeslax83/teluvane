@@ -99,8 +99,23 @@ def test_public_verify_404_when_not_opted_in(make_jwt):
     assert r.status_code == 404
 
 
+def test_put_public_requires_pro(make_jwt):
+    org_id, headers = _auth(make_jwt, pro=False)
+    _seed_anchored_session(org_id, "s1")
+    r = client.put("/anchor/s1/public", headers=headers, json={"public": True})
+    assert r.status_code == 403
+    assert anchor_store.is_public(get_pool(), org_id, "s1") is False
+
+
+def test_put_public_404_when_the_org_has_no_such_session(make_jwt):
+    org_id, headers = _auth(make_jwt, pro=True)
+    r = client.put("/anchor/no-such-session/public", headers=headers, json={"public": True})
+    assert r.status_code == 404
+    assert anchor_store.is_public(get_pool(), org_id, "no-such-session") is False
+
+
 def test_put_public_toggles_and_public_verify_returns_bundle(make_jwt):
-    org_id, headers = _auth(make_jwt)
+    org_id, headers = _auth(make_jwt, pro=True)
     _seed_anchored_session(org_id, "s1")
 
     rp = client.put("/anchor/s1/public", headers=headers, json={"public": True})

@@ -46,6 +46,29 @@ def test_verify_session_mismatch_when_root_absent_on_chain():
     assert res["proof"] == []
 
 
+def test_verify_session_head_mismatch_beats_pending():
+    """A tampered head is a mismatch even while the batch is still submitted."""
+    _seed()
+    with get_pool().connection() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE anchor_batches SET status='submitted'")
+        cur.execute("UPDATE session_anchors SET chain_head='0xdeadbeef'")
+        conn.commit()
+    with patch.object(anchor.anchor_chain, "read_anchored_at", return_value=0):
+        res = anchor.verify_session(get_pool(), "org1", "s1", cfg=CFG)
+    assert res["head_matches"] is False
+    assert res["status"] == "mismatch"
+
+
+def test_verify_session_proof_ok_is_false_when_root_does_not_match_the_batch():
+    _seed()
+    with get_pool().connection() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE anchor_batches SET root='0x' || repeat('ab', 32)")
+        conn.commit()
+    with patch.object(anchor.anchor_chain, "read_anchored_at", return_value=1_700_000_000):
+        res = anchor.verify_session(get_pool(), "org1", "s1", cfg=CFG)
+    assert res["proof_ok"] is False
+
+
 def test_verify_session_rpc_error_is_reported_not_raised():
     _seed()
     with patch.object(anchor.anchor_chain, "read_anchored_at", side_effect=Exception("rpc")):

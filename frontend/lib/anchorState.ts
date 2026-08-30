@@ -10,7 +10,8 @@ export type AnchorStateKind =
   | "verified"
   | "mismatch"
   | "rpc-unreachable"
-  | "proof-missing";
+  | "proof-missing"
+  | "unpinned";
 
 export type AnchorState =
   | { kind: "not-anchored" }
@@ -18,7 +19,10 @@ export type AnchorState =
   | { kind: "verified" }
   | { kind: "mismatch"; why: string }
   | { kind: "rpc-unreachable" }
-  | { kind: "proof-missing" };
+  | { kind: "proof-missing" }
+  // No build-time contract address and none from the API, so there is nothing
+  // trustworthy to read on-chain. Never claim an independent check here.
+  | { kind: "unpinned" };
 
 // Small colored dot next to plain text. No pills (see repo CLAUDE.md).
 export const DOT: Record<AnchorStateKind, string> = {
@@ -28,6 +32,7 @@ export const DOT: Record<AnchorStateKind, string> = {
   mismatch: "#b4451f",
   "rpc-unreachable": "#8a8a8a",
   "proof-missing": "#b4451f",
+  unpinned: "#8a8a8a",
 };
 
 export interface DecideInput {

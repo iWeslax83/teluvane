@@ -5,6 +5,7 @@ import { verifyChain, type ChainEvent } from "@/lib/chainVerify";
 import { createPublicClient, http } from "viem";
 import { avalancheFuji } from "viem/chains";
 import { decideState, type AnchorState } from "@/lib/anchorState";
+import { ANCHOR_CONTRACT, ANCHOR_RPC, EXPLORER } from "@/lib/anchorConfig";
 import { ANCHOR_ABI } from "@/components/AnchorPanel";
 import AnchorResult from "@/components/AnchorResult";
 
@@ -18,9 +19,10 @@ type VerifyBundle = {
   chain_head: string | null;
   root: string;
   tx_hash: string | null;
+  // API-supplied chain metadata. Only ever a fallback: see ANCHOR_CONTRACT below.
+  chain_id?: number | null;
   contract_address?: string;
   explorer_tx_url?: string;
-  rpc_url?: string;
   verify: {
     org_id: string;
     status?: string;
@@ -43,16 +45,6 @@ type Result = {
 
 const ACCENT = "#1f4f7a";
 const API = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-// Pinned at build time. The evidence-pack path must NOT trust network/contract
-// fields from the pasted JSON (an attacker could point the on-chain read at
-// their own contract or slip a hostile explorer URL into the tx link), so it
-// uses these instead. The session-id path keeps the values from the
-// server-controlled /verify/public/{id} response.
-const ANCHOR_CONTRACT = process.env.NEXT_PUBLIC_ANCHOR_CONTRACT_ADDRESS || undefined;
-const ANCHOR_RPC = process.env.NEXT_PUBLIC_ANCHOR_RPC_URL || undefined;
-const EXPLORER =
-  process.env.NEXT_PUBLIC_ANCHOR_EXPLORER_TX_URL || "https://testnet.snowtrace.io/tx/";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -94,15 +86,27 @@ async function runVerification(bundle: VerifyBundle, method: Method): Promise<Re
       bundle.proof ?? [],
     );
 
+    // API-supplied chain metadata is only usable if it describes the chain this
+    // build reads. A mismatch is an error state, never "verified".
+    if (bundle.chain_id != null && bundle.chain_id !== avalancheFuji.id) {
+      return { ...base, state: { kind: "rpc-unreachable" } };
+    }
+    // Pinned at build time where available. The API's address is only a
+    // fallback (and the evidence-pack path passes none at all, so a pasted pack
+    // can never redirect the read); the API's rpc_url is never used.
+    const address = ANCHOR_CONTRACT ?? bundle.contract_address;
+    if (!address) {
+      return { ...base, state: { kind: "unpinned" } };
+    }
+
     let onchain: bigint | null;
     try {
-      if (!bundle.contract_address) throw new Error("no contract address");
       const client = createPublicClient({
         chain: avalancheFuji,
-        transport: http(bundle.rpc_url || undefined),
+        transport: http(ANCHOR_RPC || undefined),
       });
       onchain = (await client.readContract({
-        address: bundle.contract_address as `0x${string}`,
+        address: address as `0x${string}`,
         abi: ANCHOR_ABI,
         functionName: "anchoredAt",
         args: [bundle.root as `0x${string}`],
@@ -210,9 +214,9 @@ export default function VerifyClient() {
         root,
         tx_hash: (parsed.tx_hash as string) ?? (anchor.tx_hash as string) ?? null,
         // Pinned to build-time constants, never read from the pasted pack.
+        chain_id: avalancheFuji.id,
         contract_address: ANCHOR_CONTRACT,
         explorer_tx_url: EXPLORER,
-        rpc_url: ANCHOR_RPC,
         verify: {
           org_id: (anchor.org_id as string) ?? (parsed.org_id as string) ?? "",
           status: (anchor.status as string) ?? undefined,

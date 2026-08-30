@@ -165,6 +165,14 @@ def anchor_canonical_ep(session_id: str, org_id: str = Depends(current_org)) -> 
 @app.put("/anchor/{session_id}/public")
 def anchor_public_ep(session_id: str, public: bool = Body(embed=True),
                      org_id: str = Depends(current_org)) -> dict:
+    # Publishing exposes the session's full canonical event list to anyone with
+    # the id, so gate it the same way the rest of the feature is gated: the org
+    # must own the session and be on Pro. As with /anchor/run there is no
+    # admin/owner check, because current_org yields no user identity.
+    if not store.events(org_id, session_id):
+        raise HTTPException(status_code=404, detail="session not found")
+    if org_plan(org_id) != "pro":
+        raise HTTPException(status_code=403, detail="Pro plan required")
     anchor_store.set_public(store.pool, org_id, session_id, public)
     return {"public": public}
 

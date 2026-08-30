@@ -48,10 +48,23 @@ def block_number(cfg) -> int:
     return make_w3(cfg).eth.block_number
 
 
+# A non-zero anchoredAt is immutable on-chain (the contract is one-shot per root),
+# so it is safe to remember forever. Zero means "not anchored yet" and must stay
+# re-queryable. This keeps GET /evidence/{id} and GET /anchor/{id} off the RPC
+# after the first hit instead of blocking a worker for up to 15 s per request.
+_ANCHORED_AT_CACHE: dict[str, int] = {}
+
+
 def read_anchored_at(cfg, root_hex: str) -> int:
+    cached = _ANCHORED_AT_CACHE.get(root_hex)
+    if cached:
+        return cached
     w3 = make_w3(cfg)
     root = bytes.fromhex(root_hex[2:] if root_hex.startswith("0x") else root_hex)
-    return int(_contract(cfg, w3).functions.anchoredAt(root).call())
+    ts = int(_contract(cfg, w3).functions.anchoredAt(root).call())
+    if ts:
+        _ANCHORED_AT_CACHE[root_hex] = ts
+    return ts
 
 
 def submit_batch(cfg, root_hex: str, session_count: int) -> str:

@@ -74,7 +74,20 @@ def test_timed_out_unmined_batch_marks_failed():
 
 def test_low_balance_logs_warning(caplog):
     _fresh()
-    with patch.object(anchor.anchor_chain, "balance_avax", return_value=0.001):
+    _submitted_batch()
+    with patch.object(anchor.anchor_chain, "balance_avax", return_value=0.001), \
+         patch.object(anchor.anchor_chain, "block_number", return_value=200), \
+         patch.object(anchor.anchor_chain, "receipt", return_value=None):
         with caplog.at_level("WARNING"):
             anchor.reconcile_pending(get_pool(), CFG)
     assert any("balance" in r.message.lower() for r in caplog.records)
+
+
+def test_idle_reconcile_makes_no_rpc_calls():
+    """Nothing pending means no balance or block_number round trip on the tick."""
+    _fresh()
+    with patch.object(anchor.anchor_chain, "balance_avax") as bal, \
+         patch.object(anchor.anchor_chain, "block_number") as blk:
+        anchor.reconcile_pending(get_pool(), CFG)
+    bal.assert_not_called()
+    blk.assert_not_called()

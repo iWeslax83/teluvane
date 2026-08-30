@@ -6,6 +6,7 @@ import { verifyChain, type ChainEvent } from "@/lib/chainVerify";
 import { createPublicClient, http } from "viem";
 import { avalancheFuji } from "viem/chains";
 import { decideState, type AnchorState } from "@/lib/anchorState";
+import { ANCHOR_CONTRACT, ANCHOR_RPC } from "@/lib/anchorConfig";
 import AnchorResult from "@/components/AnchorResult";
 
 // The one contract call the browser makes for itself: anchoredAt(bytes32 root)
@@ -32,6 +33,7 @@ type AnchorStatus = {
   total_seq: number;
   head_stored: string | null;
   head_matches: boolean;
+  is_public?: boolean;
 };
 
 type ContractInfo = {
@@ -52,6 +54,28 @@ type View = {
 
 export default function AnchorPanel({ token, sessionId }: { token: string; sessionId: string }) {
   const [view, setView] = useState<View | null>(null);
+  const [isPublic, setIsPublic] = useState<boolean | null>(null);
+  const [publicBusy, setPublicBusy] = useState(false);
+  const [publicError, setPublicError] = useState<string | null>(null);
+
+  async function togglePublic(next: boolean) {
+    setPublicBusy(true);
+    setPublicError(null);
+    const previous = isPublic;
+    setIsPublic(next);
+    try {
+      await apiFetch(`/anchor/${encodeURIComponent(sessionId)}/public`, {
+        token,
+        method: "PUT",
+        body: { public: next },
+      });
+    } catch {
+      setIsPublic(previous);
+      setPublicError("Could not change the publish setting. Pro plan only.");
+    } finally {
+      setPublicBusy(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +87,7 @@ export default function AnchorPanel({ token, sessionId }: { token: string; sessi
           { token },
         );
         if (cancelled) return;
+        setIsPublic(status.is_public === true);
 
         const base = {
           serverStatus: status.status ?? "",
@@ -97,14 +122,30 @@ export default function AnchorPanel({ token, sessionId }: { token: string; sessi
         );
         if (cancelled) return;
 
+        // The API's chain metadata is only usable if it is talking about the
+        // chain this build reads. Anything else is an error, never "verified".
+        if (contract.chain_id !== avalancheFuji.id) {
+          setView({ ...base, state: { kind: "rpc-unreachable" } });
+          return;
+        }
+        // Pinned at build time where available; the API's address is only a
+        // fallback, and its rpc_url is never used.
+        const address = (ANCHOR_CONTRACT ?? contract.contract_address) as
+          | `0x${string}`
+          | undefined;
+        if (!address) {
+          setView({ ...base, state: { kind: "unpinned" } });
+          return;
+        }
+
         let onchain: bigint | null;
         try {
           const client = createPublicClient({
             chain: avalancheFuji,
-            transport: http(contract.rpc_url || undefined),
+            transport: http(ANCHOR_RPC || undefined),
           });
           onchain = (await client.readContract({
-            address: contract.contract_address,
+            address,
             abi: ANCHOR_ABI,
             functionName: "anchoredAt",
             args: [status.root as `0x${string}`],
@@ -163,7 +204,9 @@ export default function AnchorPanel({ token, sessionId }: { token: string; sessi
           margin: "0 0 6px",
         }}
       >
-        Independent check, read from Avalanche
+        {view?.state.kind === "unpinned"
+          ? "Anchor status, as reported by TELUVANE"
+          : "Independent check, read from Avalanche"}
       </p>
 
       {view === null ? (
@@ -182,6 +225,35 @@ export default function AnchorPanel({ token, sessionId }: { token: string; sessi
         <p style={{ fontSize: 12, color: "#888", margin: "6px 0 0" }}>
           TELUVANE&apos;s check: {view.serverStatus}
         </p>
+      )}
+
+      {isPublic !== null && (
+        <>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: 8,
+              margin: "10px 0 0",
+              fontSize: 14,
+              lineHeight: 1.55,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={isPublic}
+              disabled={publicBusy}
+              onChange={(e) => togglePublic(e.target.checked)}
+            />
+            <span>
+              Publish this session for public verification. Anyone with the session id
+              can then read its full event log on the /verify page.
+            </span>
+          </label>
+          {publicError && (
+            <p style={{ fontSize: 12, color: "#b4451f", margin: "4px 0 0" }}>{publicError}</p>
+          )}
+        </>
       )}
     </section>
   );

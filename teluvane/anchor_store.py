@@ -6,14 +6,66 @@ import json
 from psycopg.rows import dict_row
 
 
+_INSERT_BATCH = ("INSERT INTO anchor_batches(root, chain_id, session_count) "
+                 "VALUES(%s,%s,%s) ON CONFLICT (root) DO NOTHING RETURNING id")
+
+
+def _insert_batch_cur(cur, root: str, chain_id: int, session_count: int) -> int:
+    """Insert a batch row, or return the id of the existing row with that root.
+
+    anchor_batches.root is UNIQUE and a quiet session's leaf never changes, so a
+    failed batch that is re-anchored produces the identical root. Without the
+    ON CONFLICT the retry would raise a UniqueViolation and wedge the pass.
+    """
+    cur.execute(_INSERT_BATCH, (root, chain_id, session_count))
+    row = cur.fetchone()
+    if row is not None:
+        return int(row[0])
+    cur.execute("SELECT id FROM anchor_batches WHERE root=%s", (root,))
+    return int(cur.fetchone()[0])
+
+
 def insert_batch(pool, root: str, chain_id: int, session_count: int) -> int:
     with pool.connection() as conn, conn.cursor() as cur:
-        cur.execute(
-            "INSERT INTO anchor_batches(root, chain_id, session_count) "
-            "VALUES(%s,%s,%s) RETURNING id", (root, chain_id, session_count))
-        bid = cur.fetchone()[0]
+        bid = _insert_batch_cur(cur, root, chain_id, session_count)
         conn.commit()
         return bid
+
+
+_INSERT_ANCHOR = (
+    "INSERT INTO session_anchors"
+    "(org_id, session_id, anchored_through_seq, batch_id, chain_head, proof) "
+    "VALUES(%s,%s,%s,%s,%s,%s) "
+    "ON CONFLICT (org_id, session_id, anchored_through_seq) DO NOTHING")
+
+
+def insert_batch_with_anchors(pool, root: str, chain_id: int, leaves: list) -> int:
+    """Write the batch row and every session_anchors membership row in ONE
+    transaction (spec section 4, step 4). `leaves` is a list of
+    (org_id, session_id, through_seq, chain_head, proof) tuples."""
+    with pool.connection() as conn, conn.cursor() as cur:
+        bid = _insert_batch_cur(cur, root, chain_id, len(leaves))
+        for org_id, session_id, through_seq, chain_head, proof in leaves:
+            cur.execute(_INSERT_ANCHOR, (org_id, session_id, through_seq, bid,
+                                         chain_head, json.dumps(list(proof))))
+        conn.commit()
+        return bid
+
+
+def batch_status(pool, batch_id: int) -> str | None:
+    with pool.connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT status FROM anchor_batches WHERE id=%s", (batch_id,))
+        row = cur.fetchone()
+        return row[0] if row else None
+
+
+def reset_batch_pending(pool, batch_id: int) -> None:
+    """Put a previously failed batch back in the pending pool so the next pass
+    can re-submit its root."""
+    with pool.connection() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE anchor_batches SET status='pending', tx_hash=NULL, "
+                    "submitted_at=NULL, confirmations=0 WHERE id=%s", (batch_id,))
+        conn.commit()
 
 
 def insert_session_anchor(pool, org_id: str, session_id: str, through_seq: int,
@@ -74,7 +126,7 @@ def _anchor_row(pool, sql: str, params: tuple) -> dict | None:
 
 
 _JOIN = ("SELECT sa.*, b.status, b.tx_hash, b.block_number, b.confirmations, "
-         "b.mined_at, b.chain_id FROM session_anchors sa "
+         "b.mined_at, b.chain_id, b.root AS batch_root FROM session_anchors sa "
          "JOIN anchor_batches b ON b.id = sa.batch_id "
          "WHERE sa.org_id=%s AND sa.session_id=%s")
 

@@ -6,7 +6,7 @@ failures degrade to "not yet anchored" plus a warning log.
 """
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 from . import anchor_chain, anchor_store, merkle
@@ -19,7 +19,9 @@ log = logging.getLogger("teluvane.anchor")
 class AnchorConfig:
     rpc_url: str
     contract_address: str
-    signer_key: str
+    # repr=False so an accidental log.info("%s", cfg) can never print the hot
+    # wallet's private key.
+    signer_key: str = field(repr=False)
     chain_id: int = 43113
     min_session_age_minutes: int = 30
     batch_interval_minutes: int = 10
@@ -120,11 +122,23 @@ def run_anchor_pass(pool, cfg: AnchorConfig) -> dict:
             if not leaves:
                 return {**empty, "skipped": "nothing-pending"}
             root, proofs = merkle.build_tree([(o, s, h) for o, s, _seq, h in leaves])
-            batch_id = anchor_store.insert_batch(pool, root, cfg.chain_id, len(leaves))
-            for org_id, session_id, through_seq, chain_head in leaves:
-                anchor_store.insert_session_anchor(
-                    pool, org_id, session_id, through_seq, batch_id, chain_head,
-                    proofs[(org_id, session_id)])
+            batch_id = anchor_store.insert_batch_with_anchors(
+                pool, root, cfg.chain_id,
+                [(o, s, seq, h, proofs[(o, s)]) for o, s, seq, h in leaves])
+
+            # A quiet session's leaf never changes, so re-anchoring after a failed
+            # batch rebuilds the identical root and lands on the existing row.
+            status = anchor_store.batch_status(pool, batch_id)
+            if status == "mined":
+                log.info("anchor root %s already mined; re-linked %d sessions",
+                         root, len(leaves))
+                return {"anchored": len(leaves), "root": root, "tx_hash": None,
+                        "skipped": None}
+            if status == "failed":
+                log.info("anchor root %s was failed; resetting batch %s to pending",
+                         root, batch_id)
+                anchor_store.reset_batch_pending(pool, batch_id)
+
             try:
                 tx_hash = anchor_chain.submit_batch(cfg, root, len(leaves))
             except Exception:
@@ -136,10 +150,18 @@ def run_anchor_pass(pool, cfg: AnchorConfig) -> dict:
                      root, tx_hash, len(leaves))
             return {"anchored": len(leaves), "root": root, "tx_hash": tx_hash,
                     "skipped": None}
+        except Exception:
+            # A DB error here must not propagate out through run_anchor_cycle and
+            # kill the scheduler tick for every other job.
+            log.exception("anchor pass failed")
+            return {**empty, "skipped": "pass-error"}
         finally:
-            with lock_conn.cursor() as cur:
-                cur.execute("SELECT pg_advisory_unlock(%s)", (ADVISORY_LOCK_KEY,))
-            lock_conn.commit()
+            try:
+                with lock_conn.cursor() as cur:
+                    cur.execute("SELECT pg_advisory_unlock(%s)", (ADVISORY_LOCK_KEY,))
+                lock_conn.commit()
+            except Exception:
+                log.exception("anchor advisory unlock failed")
 
 
 def reconcile_pending(pool, cfg: AnchorConfig) -> None:
@@ -148,6 +170,12 @@ def reconcile_pending(pool, cfg: AnchorConfig) -> None:
     their session_anchors so those sessions re-anchor), and re-submit pending
     batches whose membership persisted but whose submit never landed. Warn when
     the signer balance falls below cfg.low_balance_alert_avax."""
+    open_batches = anchor_store.batches_by_status(pool, "pending", "submitted")
+    if not open_batches:
+        # Nothing to reconcile: skip the balance + block_number RPC round trips
+        # that would otherwise run on every idle tick.
+        return
+
     try:
         bal = anchor_chain.balance_avax(cfg)
         if bal < cfg.low_balance_alert_avax:
@@ -162,7 +190,7 @@ def reconcile_pending(pool, cfg: AnchorConfig) -> None:
         log.exception("anchor block_number failed; skipping reconcile")
         return
 
-    for b in anchor_store.batches_by_status(pool, "pending", "submitted"):
+    for b in open_batches:
         if b["status"] == "pending" and not b["tx_hash"]:
             # membership persisted but submit never happened; retry it (idempotent on-chain)
             try:
@@ -231,6 +259,7 @@ def verify_session(pool, org_id: str, session_id: str, through_seq: int | None =
         "mined_at": None, "onchain_ts": None, "head_stored": None,
         "head_recomputed": None, "head_matches": False, "proof_ok": False,
         "rpc_ok": True, "status": "not-anchored",
+        "is_public": anchor_store.is_public(pool, org_id, session_id),
     }
     if not row:
         return base
@@ -256,7 +285,9 @@ def verify_session(pool, org_id: str, session_id: str, through_seq: int | None =
         "head_stored": row["chain_head"],
         "head_recomputed": head_recomputed,
         "head_matches": head_matches,
-        "proof_ok": True,
+        # The proof is only "ok" if walking it from this session's leaf lands on
+        # the root the batch actually recorded.
+        "proof_ok": implied_root == row.get("batch_root"),
     }
 
     if not cfg:
@@ -272,7 +303,11 @@ def verify_session(pool, org_id: str, session_id: str, through_seq: int | None =
         return out
 
     out["onchain_ts"] = ts or None
-    if ts and head_matches:
+    if not head_matches:
+        # A head that does not match what was anchored is a tamper hit, not a
+        # pending state, even while the batch is still in flight.
+        out["status"] = "mismatch"
+    elif ts:
         out["status"] = "verified"
     elif row["status"] in ("pending", "submitted"):
         out["status"] = "pending"
