@@ -6,6 +6,8 @@ export default function Footer() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: ".5rem" }}>
         <div><strong style={{ color: INK }}>TELUVANE</strong>: AI Agent Accountability and Compliance</div>
         <div>
+          <a href="mailto:hello@teluvane.com" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Contact</a>
+          &nbsp;·&nbsp;
           <a href="/blog" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Blog</a>
           &nbsp;·&nbsp;
           <a href="/login" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Dashboard</a>

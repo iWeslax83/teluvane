@@ -3,8 +3,9 @@ import { render, screen } from "@testing-library/react";
 import Footer from "./Footer";
 
 describe("Footer", () => {
-  it("links to blog, dashboard, privacy, terms, and accessibility", () => {
+  it("links to contact, blog, dashboard, privacy, terms, and accessibility", () => {
     render(<Footer />);
+    expect(screen.getByRole("link", { name: /contact/i }).getAttribute("href")).toBe("mailto:hello@teluvane.com");
     expect(screen.getByRole("link", { name: /blog/i }).getAttribute("href")).toBe("/blog");
     expect(screen.getByRole("link", { name: /dashboard/i }).getAttribute("href")).toBe("/login");
     expect(screen.getByRole("link", { name: /privacy/i }).getAttribute("href")).toBe("/privacy");

@@ -79,7 +79,7 @@ export default function PricingZigzag({ headingColor = INK }: { headingColor?: s
           description="For regulated industries, large deployments, on-prem needs."
           features={["Unlimited agents", "SSO / SAML integration", "On-premises deployment", "Custom policy packs and mapping"]}
           ctaLabel="Contact us"
-          ctaHref="/login"
+          ctaHref="mailto:hello@teluvane.com"
         />
       </div>
     </div>

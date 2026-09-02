@@ -8,6 +8,6 @@ describe("PricingZigzag", () => {
     expect(screen.getByText("$19.99")).toBeTruthy();
     expect(screen.getByText("Custom")).toBeTruthy();
     expect(screen.getAllByRole("link", { name: /get started free/i }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: /contact us/i }).getAttribute("href")).toBe("/login");
+    expect(screen.getByRole("link", { name: /contact us/i }).getAttribute("href")).toBe("mailto:hello@teluvane.com");
   });
 });
