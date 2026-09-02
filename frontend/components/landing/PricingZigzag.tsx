@@ -64,12 +64,29 @@ export default function PricingZigzag({ headingColor = INK }: { headingColor?: s
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "1.6rem", alignItems: "stretch" }}>
         <Tier
+          eyebrow="Free"
+          price="$0"
+          description="Run it on one project. Offline detector, no live AI calls, no card required."
+          features={["Unlimited manual audits (offline detector)", "SHA-256 hash-chained event log", "HTML evidence pack export", "EU AI Act policy pack"]}
+          ctaLabel="Get started free"
+          ctaHref="/login"
+        />
+        <Tier
+          eyebrow="Starter"
+          price="$9.99"
+          priceSuffix="/mo"
+          description="Real AI-audited verdicts, not just keyword matching, for a small team getting started."
+          features={["Everything in Free", "Hosted Claude tribunal, up to 15 audited sessions/mo", "PDF evidence pack export", "Email support"]}
+          ctaLabel="Get started"
+          ctaHref="/login"
+        />
+        <Tier
           emphasized
           eyebrow="Pro"
           price="$19.99"
           priceSuffix="/mo"
           description="Managed cloud. Everything you need for a production AI team, without running your own infrastructure."
-          features={["Up to 10 agents managed", "Hosted dashboard and real-time log", "Automated tribunal runs on schedule", "EU AI Act, ISO 42001, NIST AI RMF, and SOC 2 policy packs", "PDF + HTML evidence pack exports", "Custom policy rules", "Priority email support"]}
+          features={["Up to 10 agents managed", "Hosted Claude tribunal, up to 50 audited sessions/mo", "Automated tribunal runs on schedule", "EU AI Act, ISO 42001, NIST AI RMF, and SOC 2 policy packs", "PDF + HTML evidence pack exports", "Custom policy rules", "On-chain session anchoring (Avalanche)", "Priority email support"]}
           ctaLabel="Get started free"
           ctaHref="/login"
         />

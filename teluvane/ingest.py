@@ -26,7 +26,7 @@ from .logging_config import configure_logging
 from .evidence import build_evidence_pack, build_evidence_pdf
 from .billing import create_checkout_session, create_portal_session, handle_webhook, org_plan
 from .scheduler import get_schedule, set_schedule, run_due_schedules, run_anchor_cycle, TICK_INTERVAL_SECONDS
-from .usage import (HOSTED_AUDIT_MONTHLY_LIMIT, hosted_audit_count,
+from .usage import (hosted_audit_count, hosted_audit_limit_for_plan,
                      increment_hosted_audit_usage, under_hosted_audit_limit)
 from . import anchor, anchor_store, anchor_forced
 
@@ -221,14 +221,16 @@ def verify_public_ep(session_id: str) -> dict:
 @limiter.limit(AUDIT_RATE_LIMIT)
 def audit_session(request: Request, session_id: str, org_id: str = Depends(current_org)) -> list[Verdict]:
     api_key = get_byok(org_id, "anthropic")
-    if not api_key and org_plan(org_id) == "pro" and under_hosted_audit_limit(org_id):
-        # Pro orgs without their own BYOK key ride the hosted key, metered per calendar
-        # month so a runaway org can't spend unbounded amounts of our Anthropic budget.
+    plan = org_plan(org_id)
+    if not api_key and plan in ("starter", "pro") and under_hosted_audit_limit(org_id, plan):
+        # Starter and Pro orgs without their own BYOK key ride the hosted key, metered per
+        # calendar month (a lower cap for Starter) so a runaway org can't spend unbounded
+        # amounts of our Anthropic budget.
         api_key = os.environ.get("TELUVANE_HOSTED_ANTHROPIC_KEY")
         if api_key:
             increment_hosted_audit_usage(org_id)
     base = base_pack_for_org(org_id)
-    pack = effective_pack(org_id, base) if org_plan(org_id) == "pro" else base
+    pack = effective_pack(org_id, base) if plan == "pro" else base
     return audited_run(store, org_id, session_id, pack, api_key)   # still None -> offline audit
 
 # ---- policy framework selection (human auth: JWT) -------------------------------------------
@@ -337,9 +339,9 @@ def evidence(session_id: str, org_id: str = Depends(current_org)) -> str:
 
 @app.get("/evidence/{session_id}/pdf")
 def evidence_pdf(session_id: str, org_id: str = Depends(current_org)) -> Response:
-    # PDF export is a Pro-plan perk (per the pricing page); free orgs get the HTML pack above.
-    if org_plan(org_id) != "pro":
-        raise HTTPException(status_code=402, detail="PDF evidence export requires the Pro plan")
+    # PDF export is a Starter/Pro perk (per the pricing page); free orgs get the HTML pack above.
+    if org_plan(org_id) not in ("starter", "pro"):
+        raise HTTPException(status_code=402, detail="PDF evidence export requires the Starter or Pro plan")
     events = store.events(org_id, session_id)
     verdicts = store.verdicts(org_id, session_id)
     anchor_dict = _evidence_anchor(org_id, session_id)
@@ -462,11 +464,15 @@ def billing_plan(org_id: str = Depends(current_org)) -> dict:
 
 @app.get("/billing/usage")
 def billing_usage(org_id: str = Depends(current_org)) -> dict:
-    return {"hosted_audits_used": hosted_audit_count(org_id), "limit": HOSTED_AUDIT_MONTHLY_LIMIT}
+    plan = org_plan(org_id)
+    return {"hosted_audits_used": hosted_audit_count(org_id), "limit": hosted_audit_limit_for_plan(plan)}
 
 @app.post("/billing/checkout")
-def billing_checkout(email: str = Body(embed=True), org_id: str = Depends(current_org)) -> dict:
-    return {"url": create_checkout_session(org_id, email)}
+def billing_checkout(email: str = Body(embed=True), plan: str = Body(embed=True, default="pro"),
+                     org_id: str = Depends(current_org)) -> dict:
+    if plan not in ("starter", "pro"):
+        raise HTTPException(status_code=400, detail="plan must be 'starter' or 'pro'")
+    return {"url": create_checkout_session(org_id, email, plan)}
 
 @app.post("/billing/portal")
 def billing_portal(org_id: str = Depends(current_org)) -> dict:

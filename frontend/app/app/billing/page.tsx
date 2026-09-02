@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { getSupabase } from "@/lib/supabase";
 import TopNav from "@/components/TopNav";
 
-type Plan = { plan: "free" | "pro" | string };
+type Plan = { plan: "free" | "starter" | "pro" | string };
 type Usage = { hosted_audits_used: number; limit: number };
 
 export default function BillingPage() {
@@ -49,11 +49,11 @@ function BillingPageInner() {
     getSupabase().auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
   }, []);
 
-  async function upgrade() {
+  async function upgrade(plan: "starter" | "pro") {
     if (!token || !email) return;
     setErr(null); setBusy("checkout");
     try {
-      const r = await apiFetch<{ url: string }>("/billing/checkout", { token, method: "POST", body: { email } });
+      const r = await apiFetch<{ url: string }>("/billing/checkout", { token, method: "POST", body: { email, plan } });
       window.location.href = r.url;
     } catch (e) { setErr(String(e)); setBusy(""); }
   }
@@ -67,6 +67,7 @@ function BillingPageInner() {
     } catch (e) { setErr(String(e)); setBusy(""); }
   }
 
+  const isStarter = plan?.plan === "starter";
   const isPro = plan?.plan === "pro";
   const pct = usage && usage.limit > 0 ? Math.min(100, Math.round((usage.hosted_audits_used / usage.limit) * 100)) : 0;
 
@@ -77,8 +78,9 @@ function BillingPageInner() {
         <p className="eyebrow">Workspace</p>
         <h1 style={{ marginBottom: 6 }}>Billing</h1>
         <p className="muted small">
-          Free runs the offline detector. Pro adds live Claude tribunal audits on our hosted key,
-          metered per month, on top of whatever you get from your own BYOK key.
+          Free runs the offline detector. Starter and Pro add live Claude tribunal audits on our
+          hosted key, metered per month, on top of whatever you get from your own BYOK key. Pro
+          also adds scheduled runs, custom policy rules, and on-chain session anchoring.
         </p>
 
         {justUpgraded && (
@@ -96,7 +98,7 @@ function BillingPageInner() {
               </div>
 
               {usage && (
-                <div style={{ marginBottom: isPro ? 20 : 0 }}>
+                <div style={{ marginBottom: isPro || isStarter ? 20 : 0 }}>
                   <div className="label" style={{ marginBottom: 6 }}>
                     Hosted tribunal audits this month: {usage.hosted_audits_used} / {usage.limit}
                   </div>
@@ -105,12 +107,17 @@ function BillingPageInner() {
               )}
 
               <div className="btn-row" style={{ marginTop: 20 }}>
+                {plan?.plan === "free" && (
+                  <button className="btn btn-ghost" style={{ width: "auto" }} onClick={() => upgrade("starter")} disabled={!email || busy === "checkout"}>
+                    {busy === "checkout" ? "Redirecting…" : "Upgrade to Starter"}
+                  </button>
+                )}
                 {!isPro && (
-                  <button className="btn btn-primary" style={{ width: "auto" }} onClick={upgrade} disabled={!email || busy === "checkout"}>
+                  <button className="btn btn-primary" style={{ width: "auto" }} onClick={() => upgrade("pro")} disabled={!email || busy === "checkout"}>
                     {busy === "checkout" ? "Redirecting…" : "Upgrade to Pro"}
                   </button>
                 )}
-                {isPro && (
+                {(isPro || isStarter) && (
                   <button className="btn btn-ghost" onClick={manage} disabled={busy === "portal"}>
                     {busy === "portal" ? "Redirecting…" : "Manage subscription"}
                   </button>

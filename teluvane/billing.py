@@ -8,6 +8,8 @@ from .db import get_pool
 
 API_BASE = "https://api.lemonsqueezy.com/v1"
 PRO_VARIANT_ID = os.environ.get("LEMONSQUEEZY_VARIANT_ID_PRO", "")
+STARTER_VARIANT_ID = os.environ.get("LEMONSQUEEZY_VARIANT_ID_STARTER", "")
+_VARIANT_IDS = {"pro": PRO_VARIANT_ID, "starter": STARTER_VARIANT_ID}
 
 
 def _api_key() -> str:
@@ -18,9 +20,13 @@ def _store_id() -> str:
     return os.environ["LEMONSQUEEZY_STORE_ID"]
 
 
-def create_checkout_session(org_id: str, user_email: str) -> str:
-    """Create a hosted LemonSqueezy checkout, stamped with org_id so the webhook
-    can attribute the resulting subscription back to the org without a lookup table."""
+def create_checkout_session(org_id: str, user_email: str, plan: str = "pro") -> str:
+    """Create a hosted LemonSqueezy checkout for the given plan ("starter" or "pro"),
+    stamped with org_id so the webhook can attribute the resulting subscription back
+    to the org without a lookup table."""
+    variant_id = _VARIANT_IDS.get(plan, "")
+    if not variant_id:
+        raise ValueError(f"no LemonSqueezy variant configured for plan '{plan}'")
     attributes: dict = {
         "checkout_data": {
             "email": user_email,
@@ -45,7 +51,7 @@ def create_checkout_session(org_id: str, user_email: str) -> str:
                 "attributes": attributes,
                 "relationships": {
                     "store": {"data": {"type": "stores", "id": _store_id()}},
-                    "variant": {"data": {"type": "variants", "id": PRO_VARIANT_ID}},
+                    "variant": {"data": {"type": "variants", "id": variant_id}},
                 },
             }
         },
@@ -80,6 +86,17 @@ def verify_signature(raw_body: bytes, signature_header: str) -> bool:
 _ACTIVE_STATUSES = {"active", "on_trial"}
 
 
+def _plan_for_variant(variant_id) -> str:
+    """Map a LemonSqueezy variant id back to our plan name. An unrecognized or missing
+    variant id falls back to "pro" rather than "free": that was the only paid tier before
+    Starter existed, and a paying subscriber should never get silently downgraded because
+    a variant id wasn't configured in this environment."""
+    variant_str = str(variant_id) if variant_id is not None else ""
+    if STARTER_VARIANT_ID and variant_str == STARTER_VARIANT_ID:
+        return "starter"
+    return "pro"
+
+
 def handle_webhook(raw_body: bytes, signature_header: str) -> None:
     """Verify and apply a LemonSqueezy subscription webhook. Every event is logged to
     billing_events (verified or not) before any org row is touched, so a bad signature
@@ -110,7 +127,7 @@ def handle_webhook(raw_body: bytes, signature_header: str) -> None:
         subscription_id = payload.get("data", {}).get("id")
         renews_at = attrs.get("renews_at")
 
-        plan = "pro" if status in _ACTIVE_STATUSES else "free"
+        plan = _plan_for_variant(attrs.get("variant_id")) if status in _ACTIVE_STATUSES else "free"
         cur.execute(
             "UPDATE orgs SET plan=%s, plan_status=%s, billing_subscription_id=%s, "
             "plan_renews_at=%s WHERE id=%s",
