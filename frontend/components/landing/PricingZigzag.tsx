@@ -24,7 +24,7 @@ function Tier({
           fontSize: ".7rem", fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase",
           padding: ".2rem .6rem", borderRadius: 3,
         }}>
-          Most teams pick this
+          Recommended
         </div>
       )}
       <div style={{ fontSize: ".78rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: emphasized ? ACCENT : MUTED, marginBottom: ".5rem", marginTop: emphasized ? ".3rem" : 0 }}>

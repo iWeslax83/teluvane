@@ -46,9 +46,9 @@ h2 { font-size: 1.05rem; letter-spacing: 0.01em; }
 /* brand */
 .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 0.02em; }
 .brand .mark {
-  width: 34px; height: 34px; border-radius: 9px;
-  background: var(--ink); color: var(--paper);
-  display: grid; place-items: center; font-size: 17px;
+  width: 30px; height: 30px;
+  color: var(--accent);
+  display: grid; place-items: center;
 }
 
 /* typography helpers */
@@ -205,9 +205,9 @@ h2 { font-size: 1.05rem; letter-spacing: 0.01em; }
 
 /* misc */
 .error {
-  color: var(--ink); font-size: 0.86rem; margin-top: 12px;
+  color: var(--critical); font-size: 0.86rem; margin-top: 12px;
   padding: 9px 12px; background: #fbf8f1; border: 1px solid var(--border);
-  border-left: 3px solid var(--accent); border-radius: 2px;
+  border-radius: 2px;
 }
 .notice { background: #fff; border: 1px dashed var(--border); border-radius: 9px; padding: 12px 14px; font-size: 0.85rem; color: var(--muted); margin-top: 14px; }
 .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 14px 0 6px; }
