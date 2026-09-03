@@ -3,7 +3,7 @@
 > Status: **draft, not yet submitted.** This is Plan 3 Step A1
 > (`docs/superpowers/plans/2026-08-24-plan-3-grant-and-positioning.md`). Submission (A4) is
 > gated on Plan 1 (`docs/superpowers/plans/2026-08-23-plan-1-chain-tip-anchoring.md`) being live
-> on Fuji or mainnet with a working `/verify/onchain/{session_id}` endpoint — an application
+> on Fuji or mainnet with a working `/verify/public/{session_id}` endpoint — an application
 > pointing at a running system beats one pointing at a design doc. Do not submit this draft as-is.
 
 **Target program:** infraBUIDL(AI), Avalanche Foundation — infrabuidl.com, rolling application,
@@ -85,7 +85,7 @@ registry interface is stable enough to commit to.
 *(to be filled in once live — placeholders until Plan 1 Task 8 ships; do not submit with these
 still blank)*
 
-- Live `/verify/onchain/{session_id}` endpoint: `TODO`
+- Live `/verify/public/{session_id}` endpoint: `TODO`
 - A real anchoring transaction hash on Snowtrace (Fuji or mainnet): `TODO`
 - "Web3 Trust Layer" page (Plan 3 Section B): `TODO`
 - Technical blog post, "How we anchor tamper-evidence to Avalanche" (Plan 3 Section C): `TODO`
