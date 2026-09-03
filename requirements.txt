@@ -11,3 +11,4 @@ pyjwt>=2.8
 respx>=0.21
 cryptography>=42.0
 slowapi>=0.1.9
+sentry-sdk[fastapi]>=2.0
