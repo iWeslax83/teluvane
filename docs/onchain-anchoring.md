@@ -97,7 +97,7 @@ the whole feature is inert: no batches are built, no errors are raised.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ANCHOR_RPC_URL` | (none) | Avalanche Fuji RPC endpoint for reads and tx submission |
+| `ANCHOR_RPC_URL` | (none) | Avalanche Fuji RPC endpoint(s) for reads and tx submission. Comma-separated list for fallback: `make_w3()` tries each in order and uses the first that answers a health check, so one dead provider doesn't take anchoring down. |
 | `ANCHOR_CONTRACT_ADDRESS` | (none) | Deployed `SessionAnchorRegistry` address |
 | `ANCHOR_SIGNER_PRIVATE_KEY` | (none) | Platform Fuji hot wallet, 64 hex chars, small test-AVAX balance only |
 | `ANCHOR_CHAIN_ID` | `43113` | 43113 = Fuji testnet |

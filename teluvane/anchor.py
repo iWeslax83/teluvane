@@ -22,6 +22,10 @@ class AnchorConfig:
     # repr=False so an accidental log.info("%s", cfg) can never print the hot
     # wallet's private key.
     signer_key: str = field(repr=False)
+    # Same providers as rpc_url, split on comma, in priority order. make_w3() tries each in
+    # turn and uses the first that answers a cheap eth_blockNumber call, so one dead/rate-limited
+    # RPC provider degrades to a slower call instead of taking anchoring down.
+    rpc_urls: tuple[str, ...] = ()
     chain_id: int = 43113
     min_session_age_minutes: int = 30
     batch_interval_minutes: int = 10
@@ -34,6 +38,9 @@ class AnchorConfig:
 
 
 def chain_config() -> AnchorConfig | None:
+    # ANCHOR_RPC_URL may be a comma-separated list; anchor_chain tries each in order and
+    # falls over to the next on a connection/timeout error, so one flaky provider does not
+    # stall anchoring. rpc_url keeps the first entry for display purposes (contract/tx links).
     rpc = os.environ.get("ANCHOR_RPC_URL")
     addr = os.environ.get("ANCHOR_CONTRACT_ADDRESS")
     key = os.environ.get("ANCHOR_SIGNER_PRIVATE_KEY")
@@ -52,8 +59,9 @@ def chain_config() -> AnchorConfig | None:
         except ValueError:
             return default
 
+    rpc_urls = tuple(u.strip() for u in rpc.split(",") if u.strip())
     return AnchorConfig(
-        rpc_url=rpc, contract_address=addr, signer_key=key,
+        rpc_url=rpc_urls[0], contract_address=addr, signer_key=key, rpc_urls=rpc_urls,
         chain_id=_int("ANCHOR_CHAIN_ID", 43113),
         min_session_age_minutes=_int("ANCHOR_MIN_SESSION_AGE_MINUTES", 30),
         batch_interval_minutes=_int("ANCHOR_BATCH_INTERVAL_MINUTES", 10),

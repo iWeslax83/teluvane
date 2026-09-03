@@ -40,6 +40,7 @@ All required env vars are documented in `.env.example`. Never commit real secret
    | `SUPABASE_JWT_SECRET` | Supabase JWT secret |
    | `TELUVANE_SECRET_KEY` | Generate: `python -c "from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())"` |
    | `FRONTEND_ORIGIN` | Set after Vercel deploy (step 3 below) |
+   | `SENTRY_DSN` | Optional. Get one from [sentry.io](https://sentry.io) (new project, Python/FastAPI). Unset means no error monitoring; unhandled exceptions still land in Render's log stream as structured JSON (see `teluvane/logging_config.py`), just without alerting. |
 
 4. Click **Deploy**. Render assigns the URL from whatever service name you gave it in step
    1 (`https://<your-service-name>.onrender.com`) — it does **not** have to match the repo or
@@ -159,7 +160,7 @@ deploys it from the signer key, and prints a line like
 
 | Key | Value |
 |---|---|
-| `ANCHOR_RPC_URL` | `https://api.avax-test.network/ext/bc/C/rpc` (or your own Fuji node) |
+| `ANCHOR_RPC_URL` | `https://api.avax-test.network/ext/bc/C/rpc` (or your own Fuji node). Comma-separate multiple providers for RPC fallback, e.g. `https://api.avax-test.network/ext/bc/C/rpc,https://ava-testnet.public.blastapi.io/ext/bc/C/rpc` |
 | `ANCHOR_CONTRACT_ADDRESS` | the address printed by `deploy_anchor.py` |
 | `ANCHOR_SIGNER_PRIVATE_KEY` | the hot-wallet key (same one used to deploy) |
 

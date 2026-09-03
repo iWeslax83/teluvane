@@ -1,6 +1,9 @@
 """Thin web3.py wrapper for the SessionAnchorRegistry contract. All calls are
 synchronous and single-shot; callers handle retries and error isolation."""
 import json
+import logging
+
+log = logging.getLogger("teluvane.anchor_chain")
 
 ABI = json.loads("""
 [
@@ -20,8 +23,29 @@ ABI = json.loads("""
 
 
 def make_w3(cfg):
+    """Connect to the first RPC provider in cfg.rpc_urls that answers a cheap
+    eth_blockNumber call within its timeout. Falls back to cfg.rpc_url alone
+    (single provider, no health check) when rpc_urls is unset, so callers and
+    tests that build an AnchorConfig without rpc_urls keep working unchanged."""
     from web3 import Web3
-    return Web3(Web3.HTTPProvider(cfg.rpc_url, request_kwargs={"timeout": 15}))
+    urls = list(cfg.rpc_urls) if getattr(cfg, "rpc_urls", None) else [cfg.rpc_url]
+    if len(urls) == 1:
+        return Web3(Web3.HTTPProvider(urls[0], request_kwargs={"timeout": 15}))
+
+    last_exc: Exception | None = None
+    for i, url in enumerate(urls):
+        w3 = Web3(Web3.HTTPProvider(url, request_kwargs={"timeout": 15}))
+        try:
+            w3.eth.block_number
+            return w3
+        except Exception as exc:
+            last_exc = exc
+            log.warning("anchor RPC provider %d/%d unreachable, trying next",
+                        i + 1, len(urls))
+    # Every provider failed the health check: surface the last error rather than
+    # silently returning a dead client, so callers' existing except-and-log
+    # handling still triggers.
+    raise last_exc
 
 
 def _account(cfg):
