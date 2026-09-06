@@ -5,12 +5,13 @@ from fastapi import APIRouter, Depends, Body, HTTPException
 from ..appstate import FRAMEWORK_PACKS, base_pack_for_org
 from ..auth import current_org
 from ..orgs import get_policy_framework, set_policy_framework
-from ..policy import Rule
+from ..policy import Rule, Severity
+from typing import get_args
 from ..custom_rules import list_custom_rules, upsert_custom_rule, delete_custom_rule
 from ..billing import org_plan
 from ..scheduler import get_schedule, set_schedule
 from ..byok import set_byok, get_byok, clear_byok, has_byok
-from ..webhooks import set_webhook, get_webhook, delete_webhook
+from ..webhooks import set_webhook, get_webhook, delete_webhook, WebhookUrlError
 
 router = APIRouter()
 
@@ -41,6 +42,9 @@ def put_policy_rule(rule_id: str, description: str = Body(...), severity: str = 
                     detector_hint: str = Body(default=""), org_id: str = Depends(current_org)) -> dict:
     if org_plan(org_id) != "pro":
         raise HTTPException(status_code=402, detail="Custom policy rules require the Pro plan")
+    if severity not in get_args(Severity):
+        raise HTTPException(status_code=400,
+                            detail=f"severity must be one of {list(get_args(Severity))}")
     upsert_custom_rule(org_id, Rule(id=rule_id, description=description, severity=severity,
                                     framework_ref=framework_ref, detector_hint=detector_hint,
                                     keywords=keywords))
@@ -48,6 +52,8 @@ def put_policy_rule(rule_id: str, description: str = Body(...), severity: str = 
 
 @router.delete("/policy/rules/{rule_id}")
 def delete_policy_rule(rule_id: str, org_id: str = Depends(current_org)) -> dict:
+    if org_plan(org_id) != "pro":
+        raise HTTPException(status_code=402, detail="Custom policy rules require the Pro plan")
     delete_custom_rule(org_id, rule_id)
     return {"deleted": rule_id}
 
@@ -85,9 +91,10 @@ def get_webhook_ep(org_id: str = Depends(current_org)) -> dict:
 
 @router.put("/webhooks")
 def put_webhook_ep(url: str = Body(embed=True), org_id: str = Depends(current_org)) -> dict:
-    if not url.startswith("https://") and not url.startswith("http://"):
-        raise HTTPException(status_code=400, detail="webhook url must be http(s)")
-    secret = set_webhook(org_id, url)
+    try:
+        secret = set_webhook(org_id, url)
+    except WebhookUrlError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     return {"url": url, "secret": secret}
 
 @router.delete("/webhooks")

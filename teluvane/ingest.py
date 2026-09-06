@@ -44,9 +44,15 @@ async def _lifespan(app: FastAPI):
     _scheduler_stop.set()
 
 app = FastAPI(title="TELUVANE", lifespan=_lifespan)
-_origins = [o for o in os.environ.get("FRONTEND_ORIGIN", "").split(",") if o] or ["*"]
-app.add_middleware(CORSMiddleware, allow_origins=_origins,
-                   allow_methods=["*"], allow_headers=["*"], allow_credentials=True)
+_origins = [o for o in os.environ.get("FRONTEND_ORIGIN", "").split(",") if o]
+# With no FRONTEND_ORIGIN configured we fall back to "*", but Starlette turns
+# allow_origins=["*"] + allow_credentials=True into "reflect any Origin and allow
+# credentials", i.e. every site on the internet. Only send credentialed CORS when
+# the allowlist is explicit.
+_allow_credentials = bool(_origins)
+app.add_middleware(CORSMiddleware, allow_origins=_origins or ["*"],
+                   allow_methods=["*"], allow_headers=["*"],
+                   allow_credentials=_allow_credentials)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

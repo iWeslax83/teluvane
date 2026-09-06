@@ -4,9 +4,47 @@ os.environ.setdefault("DATABASE_URL",
 import json
 import httpx
 import pytest
-from teluvane.webhooks import set_webhook, get_webhook, delete_webhook, send_webhook, _sign
+from teluvane.webhooks import (set_webhook, get_webhook, delete_webhook, send_webhook, _sign,
+                               validate_webhook_url, WebhookUrlError)
 from teluvane.orgs import create_org
 from teluvane.schema import Verdict
+
+
+@pytest.mark.parametrize("url", [
+    "ftp://example.com/hook",
+    "http://169.254.169.254/latest/meta-data/",
+    "http://localhost:8900/events",
+    "http://127.0.0.1/x",
+    "http://[::1]/x",
+    "http://10.0.0.5/x",
+    "http://192.168.1.1/x",
+    "http://foo.internal/x",
+    "http://metadata.google.internal/x",
+])
+def test_validate_webhook_url_rejects_non_public_targets(url):
+    with pytest.raises(WebhookUrlError):
+        validate_webhook_url(url)
+
+
+def test_set_webhook_rejects_ssrf_target(store):
+    org = create_org("Acme", "u1")
+    with pytest.raises(WebhookUrlError):
+        set_webhook(org, "http://169.254.169.254/latest/meta-data/")
+    assert get_webhook(org) is None
+
+
+def test_send_webhook_skips_a_now_unroutable_url(store, monkeypatch):
+    org = create_org("Acme", "u1")
+    set_webhook(org, "https://example.com/hook")
+    with store.pool.connection() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE org_webhooks SET url='http://127.0.0.1/x' WHERE org_id=%s", (org,))
+        conn.commit()
+    calls = []
+    monkeypatch.setattr(httpx, "post", lambda *a, **kw: calls.append((a, kw)))
+    v = [Verdict(session_id="s1", rule_id="r", severity="high", violation=True,
+                 confidence=0.9, evidence_seqs=[1], rationale="x", framework_ref="y")]
+    send_webhook(org, "s1", v)
+    assert calls == []
 
 def test_set_get_delete_roundtrip(store):
     org = create_org("Acme", "u1")

@@ -52,6 +52,15 @@ class Store:
             e.cost_usd = compute_cost(e.model, e.input_tokens, e.output_tokens)
         with self.pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
+                # Serialize appends to the same (org, session) for the life of this
+                # transaction. Without it two concurrent appends both read the same
+                # prev_hash, both digest from it, and the hash chain forks: verify_chain
+                # then walks by seq and reports a perfectly legitimate session as
+                # TAMPERED. The "append:" prefix keeps this key distinct from the
+                # auditlock key for the same session, so an in-flight audit (which can
+                # hold its lock across a slow tribunal run) never blocks ingest.
+                cur.execute("SELECT pg_advisory_xact_lock(hashtext(%s))",
+                            (f"append:{org_id}:{e.session_id}",))
                 cur.execute(sql_last, (org_id, e.session_id))
                 row = cur.fetchone()
                 e.prev_hash = row["hash"] if row else "GENESIS"

@@ -1,11 +1,15 @@
 # teluvane/teluvane/policy.py
+from typing import Literal
+
 import yaml
 from pydantic import BaseModel
+
+Severity = Literal["low", "medium", "high", "critical"]
 
 class Rule(BaseModel):
     id: str
     description: str
-    severity: str
+    severity: Severity
     framework_ref: str
     detector_hint: str
     keywords: list[str] = []     # used by the offline (no-LLM) detector
