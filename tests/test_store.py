@@ -138,6 +138,36 @@ def test_sessions_anchor_field_reflects_batch_status(store):
     assert store.sessions("orgA")[0]["anchor"] == "submitted"
 
 
+def test_concurrent_appends_to_one_session_keep_the_chain_intact(store):
+    """Two threads appending to the same (org, session) at once must not fork the
+    hash chain. Without the per-session advisory lock in append() both reads see the
+    same prev_hash and verify_chain() then reports a legitimate session as tampered."""
+    import threading
+    from teluvane.store import Store
+
+    barrier = threading.Barrier(8)
+    errors = []
+
+    def worker(n):
+        try:
+            barrier.wait()
+            Store().append("orgA", _ev(session_id="race", intent=f"e{n}"))
+        except Exception as exc:  # pragma: no cover - surfaced via errors list
+            errors.append(exc)
+
+    threads = [threading.Thread(target=worker, args=(n,)) for n in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert not errors
+    evs = store.events("orgA", "race")
+    assert len(evs) == 8
+    assert len({e.seq for e in evs}) == 8
+    assert store.verify_chain("orgA", "race") is True
+
+
 def test_sessions_pagination(store):
     for i in range(5):
         store.append("orgA", _ev(session_id=f"s{i}"))

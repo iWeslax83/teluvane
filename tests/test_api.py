@@ -180,6 +180,19 @@ def test_custom_policy_rule_requires_pro_and_feeds_offline_audit(client):
     assert r4.status_code == 200
     assert not any(r["id"] == "no_offshore" for r in client.get("/policy/rules", headers=h).json())
 
+
+def test_custom_policy_rule_rejects_bad_severity(client):
+    org = create_org("Acme", "u1")
+    h = {"Authorization": f"Bearer {_jwt('u1')}"}
+    with get_pool().connection() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE orgs SET plan='pro' WHERE id=%s", (org,))
+        conn.commit()
+    r = client.put("/policy/rules/weird", headers=h,
+                   json={"description": "x", "severity": "blocker", "keywords": []})
+    assert r.status_code == 400
+    # and a rejected rule never lands in the store, so audits still run
+    assert not any(rr["id"] == "weird" for rr in client.get("/policy/rules", headers=h).json())
+
 def test_schedule_requires_pro_plan(client):
     create_org("Acme", "u1")
     h = {"Authorization": f"Bearer {_jwt('u1')}"}

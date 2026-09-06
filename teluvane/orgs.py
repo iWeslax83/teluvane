@@ -17,8 +17,10 @@ def create_org(name: str, owner_user_id: str) -> str:
 
 def org_for_user(user_id: str) -> Optional[str]:
     with get_pool().connection() as conn, conn.cursor() as cur:
-        cur.execute("SELECT org_id FROM org_members WHERE user_id=%s ORDER BY role DESC LIMIT 1",
-                    (user_id,))
+        # Prefer an org the user owns; "role DESC" only worked while the roles were
+        # exactly {owner, member} and happened to sort that way.
+        cur.execute("SELECT org_id FROM org_members WHERE user_id=%s "
+                    "ORDER BY (role = 'owner') DESC, org_id LIMIT 1", (user_id,))
         row = cur.fetchone()
     return row[0] if row else None
 

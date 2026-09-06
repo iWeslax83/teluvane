@@ -23,13 +23,9 @@ def _clean_db():
     apply_migrations()
     with get_pool().connection() as conn, conn.cursor() as cur:
         cur.execute("TRUNCATE events, verdicts, api_keys, org_members, orgs, "
-                    "anchor_batches, session_anchors, session_anchor_public "
-                    "RESTART IDENTITY CASCADE")
+                    "anchor_batches, session_anchors, session_anchor_public, "
+                    "anchor_forced_runs RESTART IDENTITY CASCADE")
         conn.commit()
-    # forced-run bookkeeping is process-global; reset between tests
-    from teluvane import anchor_forced
-    anchor_forced._last_run.clear()
-    anchor_forced._month_count.clear()
 
 
 def _auth(make_jwt, *, pro=False):

@@ -102,20 +102,32 @@ def handle_webhook(raw_body: bytes, signature_header: str) -> None:
     billing_events (verified or not) before any org row is touched, so a bad signature
     or a malformed payload never silently drops a billing event on the floor."""
     signature_ok = verify_signature(raw_body, signature_header)
-    payload = json.loads(raw_body)
-    event_type = payload.get("meta", {}).get("event_name", "unknown")
-    org_id = payload.get("meta", {}).get("custom_data", {}).get("org_id")
+    try:
+        payload = json.loads(raw_body)
+        if not isinstance(payload, dict):
+            raise ValueError("payload is not an object")
+    except ValueError:
+        payload = None
+
+    meta = payload.get("meta", {}) if payload else {}
+    event_type = meta.get("event_name", "unknown")
+    org_id = meta.get("custom_data", {}).get("org_id")
 
     with get_pool().connection() as conn, conn.cursor() as cur:
         cur.execute(
             "INSERT INTO billing_events(provider,event_type,org_id,payload,signature_ok) "
             "VALUES('lemonsqueezy',%s,%s,%s,%s)",
-            (event_type, org_id, json.dumps(payload), signature_ok),
+            (event_type, org_id,
+             json.dumps(payload if payload is not None
+                        else {"_unparseable_raw": raw_body.decode("utf-8", "replace")}),
+             signature_ok),
         )
         conn.commit()
 
         if not signature_ok:
             raise ValueError("invalid webhook signature")
+        if payload is None:
+            raise ValueError("malformed webhook body")
         if not org_id or event_type not in (
             "subscription_created", "subscription_updated", "subscription_cancelled",
             "subscription_expired", "subscription_payment_failed", "subscription_payment_success",

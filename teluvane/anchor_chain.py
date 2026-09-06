@@ -77,6 +77,7 @@ def block_number(cfg) -> int:
 # re-queryable. This keeps GET /evidence/{id} and GET /anchor/{id} off the RPC
 # after the first hit instead of blocking a worker for up to 15 s per request.
 _ANCHORED_AT_CACHE: dict[str, int] = {}
+_ANCHORED_AT_CACHE_MAX = 10_000   # bound the process memory a long-lived server holds
 
 
 def read_anchored_at(cfg, root_hex: str) -> int:
@@ -87,6 +88,10 @@ def read_anchored_at(cfg, root_hex: str) -> int:
     root = bytes.fromhex(root_hex[2:] if root_hex.startswith("0x") else root_hex)
     ts = int(_contract(cfg, w3).functions.anchoredAt(root).call())
     if ts:
+        if len(_ANCHORED_AT_CACHE) >= _ANCHORED_AT_CACHE_MAX:
+            # Cheap eviction: drop the oldest insert. Any dropped entry just costs
+            # one more RPC round trip the next time that root is verified.
+            del _ANCHORED_AT_CACHE[next(iter(_ANCHORED_AT_CACHE))]
         _ANCHORED_AT_CACHE[root_hex] = ts
     return ts
 
@@ -99,11 +104,19 @@ def submit_batch(cfg, root_hex: str, session_count: int) -> str:
     nonce = w3.eth.get_transaction_count(addr, "pending")
     max_priority = w3.to_wei(2, "gwei")
     base = w3.eth.gas_price
-    tx = contract.functions.anchorBatch(root, session_count).build_transaction({
+    fn = contract.functions.anchorBatch(root, session_count)
+    # anchorBatch is a single SSTORE + event (~45k), but estimate it so a contract
+    # change or a cold storage slot can't silently push us past a fixed limit.
+    # Fall back to a safe constant if the node won't estimate.
+    try:
+        gas = int(fn.estimate_gas({"from": addr}) * 1.25)
+    except Exception:
+        gas = 120000
+    tx = fn.build_transaction({
         "from": addr,
         "nonce": nonce,
         "chainId": cfg.chain_id,
-        "gas": 120000,
+        "gas": gas,
         "maxPriorityFeePerGas": max_priority,
         "maxFeePerGas": base * 2 + max_priority,
     })

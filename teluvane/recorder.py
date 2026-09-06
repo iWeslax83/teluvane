@@ -23,7 +23,11 @@ class TeluvaneRecorder:
             self.store.append(self.org_id, e)
         elif self.base_url:
             headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
-            httpx.post(f"{self.base_url}/events", json=e.model_dump(), headers=headers, timeout=10)
+            resp = httpx.post(f"{self.base_url}/events", json=e.model_dump(),
+                              headers=headers, timeout=10)
+            # A silently dropped event defeats the point of an audit log: surface a
+            # bad key / server error to the caller instead of reporting success.
+            resp.raise_for_status()
         else:
             raise RuntimeError("Recorder needs either store or base_url")
 
