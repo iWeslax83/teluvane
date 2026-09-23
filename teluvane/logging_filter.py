@@ -1,10 +1,12 @@
 # teluvane/teluvane/logging_filter.py
-import logging, re
+import logging
+import re
 
 _PATTERNS = [
     re.compile(r"sk-ant-[A-Za-z0-9_\-]+"),
     re.compile(r"tv_live_[A-Za-z0-9_\-]+"),
 ]
+
 
 def _redact(value):
     if isinstance(value, str):
@@ -12,8 +14,10 @@ def _redact(value):
             value = p.sub("[REDACTED]", value)
     return value
 
+
 class SecretRedactionFilter(logging.Filter):
     """Strip Anthropic keys and tv_live_ API keys from every log record, including args."""
+
     def filter(self, record: logging.LogRecord) -> bool:
         if isinstance(record.msg, str):
             record.msg = _redact(record.msg)
@@ -25,6 +29,7 @@ class SecretRedactionFilter(logging.Filter):
             else:
                 record.args = _redact(record.args)
         return True
+
 
 def install_redaction() -> None:
     """Attach the filter to the root logger so all handlers inherit it."""

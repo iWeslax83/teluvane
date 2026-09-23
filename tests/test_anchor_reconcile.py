@@ -1,10 +1,16 @@
-from unittest.mock import patch
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
+
 from teluvane import anchor, anchor_store
 from teluvane.db import get_pool
 
-CFG = anchor.AnchorConfig(rpc_url="x", contract_address="0x0", signer_key="0x0",
-                          confirmations=5, submit_timeout_minutes=30)
+CFG = anchor.AnchorConfig(
+    rpc_url="x",
+    contract_address="0x0",
+    signer_key="0x0",
+    confirmations=5,
+    submit_timeout_minutes=30,
+)
 
 
 def _fresh():
@@ -27,11 +33,20 @@ def _submitted_batch(age_minutes=1):
 def test_mined_with_enough_confirmations_marks_mined():
     _fresh()
     bid = _submitted_batch()
-    with patch.object(anchor.anchor_chain, "receipt",
-                      return_value={"block_number": 100, "status": 1, "gas_used": 90000,
-                                    "effective_gas_price": 25_000_000_000}), \
-         patch.object(anchor.anchor_chain, "block_number", return_value=110), \
-         patch.object(anchor.anchor_chain, "balance_avax", return_value=1.0):
+    with (
+        patch.object(
+            anchor.anchor_chain,
+            "receipt",
+            return_value={
+                "block_number": 100,
+                "status": 1,
+                "gas_used": 90000,
+                "effective_gas_price": 25_000_000_000,
+            },
+        ),
+        patch.object(anchor.anchor_chain, "block_number", return_value=110),
+        patch.object(anchor.anchor_chain, "balance_avax", return_value=1.0),
+    ):
         anchor.reconcile_pending(get_pool(), CFG)
     assert anchor_store.batches_by_status(get_pool(), "mined")[0]["id"] == bid
 
@@ -39,11 +54,20 @@ def test_mined_with_enough_confirmations_marks_mined():
 def test_mined_but_not_enough_confirmations_stays_submitted():
     _fresh()
     _submitted_batch()
-    with patch.object(anchor.anchor_chain, "receipt",
-                      return_value={"block_number": 100, "status": 1, "gas_used": 1,
-                                    "effective_gas_price": 1}), \
-         patch.object(anchor.anchor_chain, "block_number", return_value=102), \
-         patch.object(anchor.anchor_chain, "balance_avax", return_value=1.0):
+    with (
+        patch.object(
+            anchor.anchor_chain,
+            "receipt",
+            return_value={
+                "block_number": 100,
+                "status": 1,
+                "gas_used": 1,
+                "effective_gas_price": 1,
+            },
+        ),
+        patch.object(anchor.anchor_chain, "block_number", return_value=102),
+        patch.object(anchor.anchor_chain, "balance_avax", return_value=1.0),
+    ):
         anchor.reconcile_pending(get_pool(), CFG)
     assert anchor_store.batches_by_status(get_pool(), "submitted")
     assert anchor_store.batches_by_status(get_pool(), "submitted")[0]["confirmations"] == 3
@@ -52,11 +76,20 @@ def test_mined_but_not_enough_confirmations_stays_submitted():
 def test_reverted_receipt_marks_failed_and_clears_anchors():
     _fresh()
     _submitted_batch()
-    with patch.object(anchor.anchor_chain, "receipt",
-                      return_value={"block_number": 100, "status": 0, "gas_used": 1,
-                                    "effective_gas_price": 1}), \
-         patch.object(anchor.anchor_chain, "block_number", return_value=200), \
-         patch.object(anchor.anchor_chain, "balance_avax", return_value=1.0):
+    with (
+        patch.object(
+            anchor.anchor_chain,
+            "receipt",
+            return_value={
+                "block_number": 100,
+                "status": 0,
+                "gas_used": 1,
+                "effective_gas_price": 1,
+            },
+        ),
+        patch.object(anchor.anchor_chain, "block_number", return_value=200),
+        patch.object(anchor.anchor_chain, "balance_avax", return_value=1.0),
+    ):
         anchor.reconcile_pending(get_pool(), CFG)
     assert anchor_store.batches_by_status(get_pool(), "failed")
     assert anchor_store.latest_anchor(get_pool(), "o", "s") is None
@@ -65,9 +98,11 @@ def test_reverted_receipt_marks_failed_and_clears_anchors():
 def test_timed_out_unmined_batch_marks_failed():
     _fresh()
     _submitted_batch(age_minutes=45)
-    with patch.object(anchor.anchor_chain, "receipt", return_value=None), \
-         patch.object(anchor.anchor_chain, "block_number", return_value=200), \
-         patch.object(anchor.anchor_chain, "balance_avax", return_value=1.0):
+    with (
+        patch.object(anchor.anchor_chain, "receipt", return_value=None),
+        patch.object(anchor.anchor_chain, "block_number", return_value=200),
+        patch.object(anchor.anchor_chain, "balance_avax", return_value=1.0),
+    ):
         anchor.reconcile_pending(get_pool(), CFG)
     assert anchor_store.batches_by_status(get_pool(), "failed")
 
@@ -75,9 +110,11 @@ def test_timed_out_unmined_batch_marks_failed():
 def test_low_balance_logs_warning(caplog):
     _fresh()
     _submitted_batch()
-    with patch.object(anchor.anchor_chain, "balance_avax", return_value=0.001), \
-         patch.object(anchor.anchor_chain, "block_number", return_value=200), \
-         patch.object(anchor.anchor_chain, "receipt", return_value=None):
+    with (
+        patch.object(anchor.anchor_chain, "balance_avax", return_value=0.001),
+        patch.object(anchor.anchor_chain, "block_number", return_value=200),
+        patch.object(anchor.anchor_chain, "receipt", return_value=None),
+    ):
         with caplog.at_level("WARNING"):
             anchor.reconcile_pending(get_pool(), CFG)
     assert any("balance" in r.message.lower() for r in caplog.records)
@@ -86,8 +123,10 @@ def test_low_balance_logs_warning(caplog):
 def test_idle_reconcile_makes_no_rpc_calls():
     """Nothing pending means no balance or block_number round trip on the tick."""
     _fresh()
-    with patch.object(anchor.anchor_chain, "balance_avax") as bal, \
-         patch.object(anchor.anchor_chain, "block_number") as blk:
+    with (
+        patch.object(anchor.anchor_chain, "balance_avax") as bal,
+        patch.object(anchor.anchor_chain, "block_number") as blk,
+    ):
         anchor.reconcile_pending(get_pool(), CFG)
     bal.assert_not_called()
     blk.assert_not_called()

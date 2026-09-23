@@ -1,17 +1,21 @@
 import os
+
 os.environ["TELUVANE_API_KEY"] = "tv_live_test"
 os.environ["TELUVANE_URL"] = "http://localhost:8900"
 os.environ["TELUVANE_AGENT_ID"] = "test-agent"
 
-import json
 import httpx
+
 from teluvane import mcp_server
+
 
 def _stub_post(calls):
     def _post(url, json, headers, timeout):
         calls.append((url, json, headers))
         return httpx.Response(200, json={}, request=httpx.Request("POST", url))
+
     return _post
+
 
 def test_record_llm_call_posts_the_right_event(monkeypatch):
     calls = []
@@ -27,12 +31,18 @@ def test_record_llm_call_posts_the_right_event(monkeypatch):
     assert body["agent_id"] == "test-agent"
     assert body["session_id"] == mcp_server.DEFAULT_SESSION_ID
 
+
 def test_record_tool_call_and_result_use_explicit_session_id(monkeypatch):
     raw = []
     monkeypatch.setattr(httpx, "post", _stub_post(raw))
 
-    mcp_server.record_tool_call(tool="send_email", args={"to": "x@y.com"}, intent="notify",
-                                approved_by="auto", session_id="custom-sess")
+    mcp_server.record_tool_call(
+        tool="send_email",
+        args={"to": "x@y.com"},
+        intent="notify",
+        approved_by="auto",
+        session_id="custom-sess",
+    )
     mcp_server.record_tool_result(tool="send_email", output="sent", session_id="custom-sess")
 
     calls = [body for _url, body, _headers in raw]
@@ -40,6 +50,7 @@ def test_record_tool_call_and_result_use_explicit_session_id(monkeypatch):
     assert calls[0]["kind"] == "tool_call" and calls[0]["session_id"] == "custom-sess"
     assert calls[0]["approved_by"] == "auto"
     assert calls[1]["kind"] == "tool_result" and calls[1]["output"] == "sent"
+
 
 def test_requires_api_key(monkeypatch):
     monkeypatch.setattr(mcp_server, "API_KEY", None)

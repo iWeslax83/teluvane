@@ -4,17 +4,19 @@ import os
 import threading
 import uuid
 from contextlib import asynccontextmanager
+
 import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from .appstate import store, limiter, FRAMEWORK_PACKS
+
+from .appstate import FRAMEWORK_PACKS, limiter, store
 from .logging_config import configure_logging
 from .monitoring import configure_sentry
-from .scheduler import run_due_schedules, run_anchor_cycle, TICK_INTERVAL_SECONDS
-from .routes import sessions, anchor, policy, evidence, orgs, billing
+from .routes import anchor, billing, evidence, orgs, policy, sessions
+from .scheduler import TICK_INTERVAL_SECONDS, run_anchor_cycle, run_due_schedules
 
 configure_logging()
 configure_sentry()
@@ -26,10 +28,15 @@ configure_sentry()
 # the lifespan; only a `with TestClient(app) as c:` context manager would.
 _scheduler_stop = threading.Event()
 
+
 def _scheduler_loop() -> None:
     while not _scheduler_stop.wait(TICK_INTERVAL_SECONDS):
         try:
-            run_due_schedules(store, FRAMEWORK_PACKS, hosted_api_key=os.environ.get("TELUVANE_HOSTED_ANTHROPIC_KEY"))
+            run_due_schedules(
+                store,
+                FRAMEWORK_PACKS,
+                hosted_api_key=os.environ.get("TELUVANE_HOSTED_ANTHROPIC_KEY"),
+            )
         except Exception:
             logging.exception("scheduled tribunal tick failed")
         try:
@@ -37,11 +44,13 @@ def _scheduler_loop() -> None:
         except Exception:
             logging.exception("anchor tick failed")
 
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     threading.Thread(target=_scheduler_loop, daemon=True).start()
     yield
     _scheduler_stop.set()
+
 
 app = FastAPI(title="TELUVANE", lifespan=_lifespan)
 _origins = [o for o in os.environ.get("FRONTEND_ORIGIN", "").split(",") if o]
@@ -50,26 +59,37 @@ _origins = [o for o in os.environ.get("FRONTEND_ORIGIN", "").split(",") if o]
 # credentials", i.e. every site on the internet. Only send credentialed CORS when
 # the allowlist is explicit.
 _allow_credentials = bool(_origins)
-app.add_middleware(CORSMiddleware, allow_origins=_origins or ["*"],
-                   allow_methods=["*"], allow_headers=["*"],
-                   allow_credentials=_allow_credentials)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_origins or ["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=_allow_credentials,
+)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+
 @app.exception_handler(Exception)
 async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     request_id = str(uuid.uuid4())
-    logging.exception("unhandled exception [request_id=%s] %s %s", request_id, request.method, request.url.path)
+    logging.exception(
+        "unhandled exception [request_id=%s] %s %s", request_id, request.method, request.url.path
+    )
     # This handler catching the exception stops it from ever reaching Sentry's ASGI
     # middleware, so it has to be reported explicitly. No-op if SENTRY_DSN unset.
     sentry_sdk.capture_exception(exc)
-    return JSONResponse(status_code=500, content={"error": "internal_error", "request_id": request_id})
+    return JSONResponse(
+        status_code=500, content={"error": "internal_error", "request_id": request_id}
+    )
+
 
 # ---- health / readiness (no auth) ----------------------------------------------------------
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
 
 @app.get("/ready")
 def ready():
@@ -81,7 +101,9 @@ def ready():
     except Exception:
         logging.exception("db readiness check failed")
         from fastapi import Response
+
         return Response(content='{"db": false}', media_type="application/json", status_code=503)
+
 
 # Route order matters within each router (literal paths before {session_id} path params),
 # preserved inside teluvane/routes/*.py; mount order across routers does not matter since

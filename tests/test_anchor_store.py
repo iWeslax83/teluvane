@@ -1,11 +1,12 @@
-import json
 from teluvane import anchor_store
 from teluvane.db import get_pool
 
 
 def _truncate():
     with get_pool().connection() as conn, conn.cursor() as cur:
-        cur.execute("TRUNCATE anchor_batches, session_anchors, session_anchor_public RESTART IDENTITY CASCADE")
+        cur.execute(
+            "TRUNCATE anchor_batches, session_anchors, session_anchor_public RESTART IDENTITY CASCADE"
+        )
         conn.commit()
 
 

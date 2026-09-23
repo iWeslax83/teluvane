@@ -1,21 +1,29 @@
 import os
-os.environ.setdefault("DATABASE_URL",
-    os.environ.get("TEST_DATABASE_URL", "postgresql://localhost:5432/teluvane_test"))
+
+os.environ.setdefault(
+    "DATABASE_URL", os.environ.get("TEST_DATABASE_URL", "postgresql://localhost:5432/teluvane_test")
+)
 os.environ.setdefault("SUPABASE_JWT_SECRET", "test-secret")
 os.environ.setdefault("TELUVANE_SECRET_KEY", "BDUpLFAo9s1dqKy3BZFUcEvdGA7sS0rgdpUEe3Yai8I=")
 import importlib
-import teluvane.ingest as ing
+
 from fastapi.testclient import TestClient
-from teluvane.migrate import apply_migrations
-from teluvane.orgs import create_org
+
+import teluvane.ingest as ing
 from teluvane.apikeys import create_api_key
 from teluvane.db import get_pool
+from teluvane.migrate import apply_migrations
+from teluvane.orgs import create_org
+
 
 def _clean():
     apply_migrations()
     with get_pool().connection() as conn, conn.cursor() as cur:
-        cur.execute("TRUNCATE events, verdicts, api_keys, byok_secrets, org_members, orgs RESTART IDENTITY CASCADE")
+        cur.execute(
+            "TRUNCATE events, verdicts, api_keys, byok_secrets, org_members, orgs RESTART IDENTITY CASCADE"
+        )
         conn.commit()
+
 
 def test_events_rate_limited():
     _clean()
@@ -28,12 +36,20 @@ def test_events_rate_limited():
     os.environ["EVENTS_RATE_LIMIT"] = "3/minute"
     try:
         importlib.reload(ing)
-        org = create_org("Acme", "u1"); key = create_api_key(org, "ci")
+        org = create_org("Acme", "u1")
+        key = create_api_key(org, "ci")
         c = TestClient(ing.app)
         h = {"Authorization": f"Bearer {key}"}
-        ev = {"agent_id": "a", "session_id": "s", "kind": "tool_call", "tool": "t", "args": {}, "intent": "i"}
+        ev = {
+            "agent_id": "a",
+            "session_id": "s",
+            "kind": "tool_call",
+            "tool": "t",
+            "args": {},
+            "intent": "i",
+        }
         codes = [c.post("/events", json=ev, headers=h).status_code for _ in range(5)]
-        assert 429 in codes   # the limiter trips within the window
+        assert 429 in codes  # the limiter trips within the window
     finally:
         if original_limit is None:
             os.environ.pop("EVENTS_RATE_LIMIT", None)

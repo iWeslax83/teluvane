@@ -1,25 +1,41 @@
 # teluvane/teluvane/store.py
-import hashlib, json
+import hashlib
+import json
 from typing import Optional
+
 from psycopg.rows import dict_row
-from .schema import Event, Verdict
-from .db import get_pool
+
 from .cost import compute_cost
+from .db import get_pool
+from .schema import Event, Verdict
+
 
 def _event_canonical(prev_hash: str, e: Event) -> str:
     # The exact string the hash chain digests. org_id is included so an event is
     # cryptographically bound to its tenant. Output bytes are frozen: changing
     # this invalidates every stored chain.
-    return json.dumps({
-        "prev": prev_hash, "org_id": e.org_id, "agent_id": e.agent_id,
-        "session_id": e.session_id, "kind": e.kind, "intent": e.intent,
-        "tool": e.tool, "args": e.args, "output": e.output,
-        "approved_by": e.approved_by, "ts": e.ts,
-    }, sort_keys=True, ensure_ascii=False)
+    return json.dumps(
+        {
+            "prev": prev_hash,
+            "org_id": e.org_id,
+            "agent_id": e.agent_id,
+            "session_id": e.session_id,
+            "kind": e.kind,
+            "intent": e.intent,
+            "tool": e.tool,
+            "args": e.args,
+            "output": e.output,
+            "approved_by": e.approved_by,
+            "ts": e.ts,
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
 
 
 def _event_digest(prev_hash: str, e: Event) -> str:
     return hashlib.sha256(_event_canonical(prev_hash, e).encode("utf-8")).hexdigest()
+
 
 class Store:
     """Tenant-scoped Postgres store. EVERY public method takes org_id as its first argument;
@@ -38,11 +54,15 @@ class Store:
 
     # ---- writes -----------------------------------------------------------------------------
     def append(self, org_id: str, e: Event) -> Event:
-        sql_last = "SELECT hash FROM events WHERE org_id=%s AND session_id=%s ORDER BY seq DESC LIMIT 1"
-        sql_ins = ("INSERT INTO events"
-                   "(org_id,agent_id,session_id,kind,intent,tool,args,output,approved_by,ts,"
-                   "prev_hash,hash,model,input_tokens,output_tokens,cost_usd)"
-                   " VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING seq")
+        sql_last = (
+            "SELECT hash FROM events WHERE org_id=%s AND session_id=%s ORDER BY seq DESC LIMIT 1"
+        )
+        sql_ins = (
+            "INSERT INTO events"
+            "(org_id,agent_id,session_id,kind,intent,tool,args,output,approved_by,ts,"
+            "prev_hash,hash,model,input_tokens,output_tokens,cost_usd)"
+            " VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING seq"
+        )
         self._assert_scoped(org_id, sql_last)
         self._assert_scoped(org_id, sql_ins)
         e.org_id = org_id
@@ -59,31 +79,64 @@ class Store:
                 # TAMPERED. The "append:" prefix keeps this key distinct from the
                 # auditlock key for the same session, so an in-flight audit (which can
                 # hold its lock across a slow tribunal run) never blocks ingest.
-                cur.execute("SELECT pg_advisory_xact_lock(hashtext(%s))",
-                            (f"append:{org_id}:{e.session_id}",))
+                cur.execute(
+                    "SELECT pg_advisory_xact_lock(hashtext(%s))",
+                    (f"append:{org_id}:{e.session_id}",),
+                )
                 cur.execute(sql_last, (org_id, e.session_id))
                 row = cur.fetchone()
                 e.prev_hash = row["hash"] if row else "GENESIS"
                 e.hash = _event_digest(e.prev_hash, e)
-                cur.execute(sql_ins, (
-                    org_id, e.agent_id, e.session_id, e.kind, e.intent, e.tool,
-                    json.dumps(e.args, ensure_ascii=False), e.output, e.approved_by,
-                    e.ts, e.prev_hash, e.hash, e.model, e.input_tokens, e.output_tokens, e.cost_usd))
+                cur.execute(
+                    sql_ins,
+                    (
+                        org_id,
+                        e.agent_id,
+                        e.session_id,
+                        e.kind,
+                        e.intent,
+                        e.tool,
+                        json.dumps(e.args, ensure_ascii=False),
+                        e.output,
+                        e.approved_by,
+                        e.ts,
+                        e.prev_hash,
+                        e.hash,
+                        e.model,
+                        e.input_tokens,
+                        e.output_tokens,
+                        e.cost_usd,
+                    ),
+                )
                 e.seq = cur.fetchone()["seq"]
             conn.commit()
         return e
 
     def add_verdict(self, org_id: str, v: Verdict) -> None:
-        sql = ("INSERT INTO verdicts"
-               "(org_id,session_id,rule_id,severity,violation,confidence,evidence_seqs,rationale,framework_ref,ts)"
-               " VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
+        sql = (
+            "INSERT INTO verdicts"
+            "(org_id,session_id,rule_id,severity,violation,confidence,evidence_seqs,rationale,framework_ref,ts)"
+            " VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        )
         self._assert_scoped(org_id, sql)
         v.org_id = org_id
         with self.pool.connection() as conn:
             with conn.cursor() as cur:
-                cur.execute(sql, (
-                    org_id, v.session_id, v.rule_id, v.severity, v.violation, v.confidence,
-                    json.dumps(v.evidence_seqs), v.rationale, v.framework_ref, v.ts))
+                cur.execute(
+                    sql,
+                    (
+                        org_id,
+                        v.session_id,
+                        v.rule_id,
+                        v.severity,
+                        v.violation,
+                        v.confidence,
+                        json.dumps(v.evidence_seqs),
+                        v.rationale,
+                        v.framework_ref,
+                        v.ts,
+                    ),
+                )
             conn.commit()
 
     # ---- reads ------------------------------------------------------------------------------
@@ -91,7 +144,8 @@ class Store:
         sql = "SELECT * FROM events WHERE org_id=%s"
         params: tuple = (org_id,)
         if session_id:
-            sql += " AND session_id=%s"; params += (session_id,)
+            sql += " AND session_id=%s"
+            params += (session_id,)
         sql += " ORDER BY seq ASC"
         self._assert_scoped(org_id, sql)
         with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
@@ -103,14 +157,16 @@ class Store:
         sql = "SELECT * FROM verdicts WHERE org_id=%s"
         params: tuple = (org_id,)
         if session_id:
-            sql += " AND session_id=%s"; params += (session_id,)
+            sql += " AND session_id=%s"
+            params += (session_id,)
         self._assert_scoped(org_id, sql)
         with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
             cur.execute(sql, params)
             rows = cur.fetchall()
         out = []
         for r in rows:
-            d = dict(r); d.pop("id", None)
+            d = dict(r)
+            d.pop("id", None)
             out.append(Verdict(**d))
         return out
 
@@ -129,8 +185,14 @@ class Store:
         out = []
         prev = "GENESIS"
         for e in self.events(org_id, session_id):
-            out.append({"seq": e.seq, "prev_hash": prev, "hash": e.hash,
-                        "canonical": _event_canonical(prev, e)})
+            out.append(
+                {
+                    "seq": e.seq,
+                    "prev_hash": prev,
+                    "hash": e.hash,
+                    "canonical": _event_canonical(prev, e),
+                }
+            )
             prev = e.hash
         return out
 
@@ -143,7 +205,8 @@ class Store:
             "FROM generate_series(current_date - (%s - 1) * interval '1 day', current_date, "
             "interval '1 day') AS d "
             "LEFT JOIN verdicts v ON v.org_id=%s AND v.violation AND v.ts::date = d::date "
-            "GROUP BY d ORDER BY d")
+            "GROUP BY d ORDER BY d"
+        )
         self._assert_scoped(org_id, sql)
         with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
             cur.execute(sql, (days, org_id))
@@ -162,16 +225,25 @@ class Store:
             "FROM generate_series(current_date - (%s - 1) * interval '1 day', current_date, "
             "interval '1 day') AS d "
             "LEFT JOIN events e ON e.org_id=%s AND e.kind='llm_call' AND e.ts::date = d::date "
-            "GROUP BY d ORDER BY d")
+            "GROUP BY d ORDER BY d"
+        )
         self._assert_scoped(org_id, sql)
         with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
             cur.execute(sql, (days, org_id))
             rows = cur.fetchall()
-        return [{"date": r["day"].isoformat(), "input_tokens": r["input_tokens"],
-                "output_tokens": r["output_tokens"], "cost_usd": float(r["cost_usd"])} for r in rows]
+        return [
+            {
+                "date": r["day"].isoformat(),
+                "input_tokens": r["input_tokens"],
+                "output_tokens": r["output_tokens"],
+                "cost_usd": float(r["cost_usd"]),
+            }
+            for r in rows
+        ]
 
-    def sessions(self, org_id: str, q: Optional[str] = None,
-                limit: int = 50, offset: int = 0) -> list[dict]:
+    def sessions(
+        self, org_id: str, q: Optional[str] = None, limit: int = 50, offset: int = 0
+    ) -> list[dict]:
         """Paginated, newest-first session summaries: id, event count, latest timestamp.
         `q` filters by a case-insensitive substring match on session_id. Returning exactly
         `limit` rows is the caller's signal that another page may exist (no separate count
@@ -180,15 +252,20 @@ class Store:
         where = "WHERE org_id=%s"
         params: tuple = (org_id,)
         if q:
-            where += " AND session_id ILIKE %s"; params += (f"%{q}%",)
-        sql = (f"SELECT session_id, count(*) AS events, max(ts) AS last_ts FROM events {where} "
-               "GROUP BY session_id ORDER BY max(seq) DESC LIMIT %s OFFSET %s")
+            where += " AND session_id ILIKE %s"
+            params += (f"%{q}%",)
+        sql = (
+            f"SELECT session_id, count(*) AS events, max(ts) AS last_ts FROM events {where} "
+            "GROUP BY session_id ORDER BY max(seq) DESC LIMIT %s OFFSET %s"
+        )
         self._assert_scoped(org_id, sql)
         with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
             cur.execute(sql, params + (limit, offset))
             rows = cur.fetchall()
-        out = [{"session_id": r["session_id"], "events": r["events"], "last_ts": r["last_ts"]}
-               for r in rows]
+        out = [
+            {"session_id": r["session_id"], "events": r["events"], "last_ts": r["last_ts"]}
+            for r in rows
+        ]
         ids = [r["session_id"] for r in out]
         if ids:
             anchor_status: dict[str, str] = {}
@@ -196,7 +273,8 @@ class Store:
                 "SELECT sa.session_id, b.status FROM session_anchors sa "
                 "JOIN anchor_batches b ON b.id = sa.batch_id "
                 "WHERE sa.org_id=%s AND sa.session_id = ANY(%s) "
-                "ORDER BY sa.anchored_through_seq DESC")
+                "ORDER BY sa.anchored_through_seq DESC"
+            )
             self._assert_scoped(org_id, astmt)
             with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(astmt, (org_id, ids))

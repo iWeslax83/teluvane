@@ -1,5 +1,6 @@
-from unittest.mock import patch
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
+
 from teluvane import anchor, anchor_store
 from teluvane.db import get_pool
 from teluvane.schema import Event
@@ -10,8 +11,10 @@ CFG = anchor.AnchorConfig(rpc_url="x", contract_address="0x0", signer_key="0x0")
 
 def _seed_pro_session(session_id, n=1):
     with get_pool().connection() as conn, conn.cursor() as cur:
-        cur.execute("TRUNCATE events, orgs, org_members, anchor_batches, session_anchors "
-                    "RESTART IDENTITY CASCADE")
+        cur.execute(
+            "TRUNCATE events, orgs, org_members, anchor_batches, session_anchors "
+            "RESTART IDENTITY CASCADE"
+        )
         cur.execute("INSERT INTO orgs(id,name,owner_user_id,plan) VALUES('org1','o','u','pro')")
         conn.commit()
     s = Store()
@@ -94,8 +97,9 @@ def test_reanchor_of_a_mined_root_relinks_without_resubmitting(monkeypatch):
 def test_pass_error_is_swallowed_and_reported(monkeypatch):
     monkeypatch.setattr(anchor, "org_plan", lambda o: "pro")
     _seed_pro_session("s5", 1)
-    with patch.object(anchor.anchor_store, "insert_batch_with_anchors",
-                      side_effect=Exception("db down")):
+    with patch.object(
+        anchor.anchor_store, "insert_batch_with_anchors", side_effect=Exception("db down")
+    ):
         res = anchor.run_anchor_pass(get_pool(), CFG)
     assert res["skipped"] == "pass-error"
 
@@ -107,5 +111,5 @@ def test_submit_failure_leaves_batch_pending_with_membership(monkeypatch):
         res = anchor.run_anchor_pass(get_pool(), CFG)
     assert res["skipped"] == "submit-failed"
     row = anchor_store.latest_anchor(get_pool(), "org1", "s2")
-    assert row["status"] == "pending"          # membership persisted, tx not sent
+    assert row["status"] == "pending"  # membership persisted, tx not sent
     assert row["tx_hash"] is None

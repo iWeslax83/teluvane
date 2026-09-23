@@ -3,14 +3,15 @@
 (which imports the route modules to mount them). Importing this module has no
 side effect beyond building the Store and loading policy packs; it must never
 import teluvane.ingest or any teluvane.routes.* module."""
+
 import os
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from .store import Store
-from .policy import load_policy_pack, PolicyPack
 from .orgs import get_policy_framework
+from .policy import PolicyPack, load_policy_pack
+from .store import Store
 
 store = Store()
 
@@ -26,7 +27,9 @@ FRAMEWORK_PACKS = {
     "iso42001": load_policy_pack("policies/iso42001.yaml"),
 }
 
+
 def base_pack_for_org(org_id: str) -> PolicyPack:
     return FRAMEWORK_PACKS.get(get_policy_framework(org_id), _pack)
+
 
 limiter = Limiter(key_func=get_remote_address)

@@ -10,7 +10,9 @@ CFG = anchor.AnchorConfig(rpc_url="x", contract_address="0x0", signer_key="0x0")
 
 def _seed():
     with get_pool().connection() as conn, conn.cursor() as cur:
-        cur.execute("TRUNCATE events, orgs, anchor_batches, session_anchors RESTART IDENTITY CASCADE")
+        cur.execute(
+            "TRUNCATE events, orgs, anchor_batches, session_anchors RESTART IDENTITY CASCADE"
+        )
         cur.execute("INSERT INTO orgs(id,name,owner_user_id) VALUES('org1','o','u')")
         conn.commit()
     s = Store()
@@ -19,7 +21,9 @@ def _seed():
     head = s.events("org1", "s1")[-1].hash
     root, proofs = merkle.build_tree([("org1", "s1", head)])
     bid = anchor_store.insert_batch(get_pool(), root, 43113, 1)
-    anchor_store.insert_session_anchor(get_pool(), "org1", "s1", 3, bid, head, proofs[("org1", "s1")])
+    anchor_store.insert_session_anchor(
+        get_pool(), "org1", "s1", 3, bid, head, proofs[("org1", "s1")]
+    )
     anchor_store.mark_submitted(get_pool(), bid, "0xtx")
     anchor_store.mark_mined(get_pool(), bid, 42, 90000, 1, 6)
     return root, head
@@ -80,7 +84,9 @@ def test_verify_session_rpc_error_is_reported_not_raised():
 
 def test_verify_session_not_anchored():
     with get_pool().connection() as conn, conn.cursor() as cur:
-        cur.execute("TRUNCATE events, orgs, anchor_batches, session_anchors RESTART IDENTITY CASCADE")
+        cur.execute(
+            "TRUNCATE events, orgs, anchor_batches, session_anchors RESTART IDENTITY CASCADE"
+        )
         cur.execute("INSERT INTO orgs(id,name,owner_user_id) VALUES('org1','o','u')")
         conn.commit()
     Store().append("org1", Event(agent_id="a", session_id="s9", kind="llm_call", intent="x"))

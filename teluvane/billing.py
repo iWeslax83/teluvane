@@ -1,5 +1,8 @@
 # teluvane/teluvane/billing.py
-import hashlib, hmac, json, os
+import hashlib
+import hmac
+import json
+import os
 from typing import Optional
 
 import httpx
@@ -117,10 +120,16 @@ def handle_webhook(raw_body: bytes, signature_header: str) -> None:
         cur.execute(
             "INSERT INTO billing_events(provider,event_type,org_id,payload,signature_ok) "
             "VALUES('lemonsqueezy',%s,%s,%s,%s)",
-            (event_type, org_id,
-             json.dumps(payload if payload is not None
-                        else {"_unparseable_raw": raw_body.decode("utf-8", "replace")}),
-             signature_ok),
+            (
+                event_type,
+                org_id,
+                json.dumps(
+                    payload
+                    if payload is not None
+                    else {"_unparseable_raw": raw_body.decode("utf-8", "replace")}
+                ),
+                signature_ok,
+            ),
         )
         conn.commit()
 
@@ -129,8 +138,12 @@ def handle_webhook(raw_body: bytes, signature_header: str) -> None:
         if payload is None:
             raise ValueError("malformed webhook body")
         if not org_id or event_type not in (
-            "subscription_created", "subscription_updated", "subscription_cancelled",
-            "subscription_expired", "subscription_payment_failed", "subscription_payment_success",
+            "subscription_created",
+            "subscription_updated",
+            "subscription_cancelled",
+            "subscription_expired",
+            "subscription_payment_failed",
+            "subscription_payment_success",
         ):
             return
 

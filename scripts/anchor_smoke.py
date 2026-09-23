@@ -10,6 +10,7 @@ The batch is built from a unique throwaway leaf each run (a timestamp goes into
 the session id), so the root is never one a real pass would produce and re-runs
 do not collide with the contract's AlreadyAnchored guard.
 """
+
 import sys
 import time
 
@@ -18,9 +19,16 @@ from teluvane import anchor, anchor_chain, merkle
 
 def main() -> int:
     cfg = anchor.chain_config()
-    assert cfg, "ANCHOR_* env not set (need ANCHOR_RPC_URL, ANCHOR_CONTRACT_ADDRESS, ANCHOR_SIGNER_PRIVATE_KEY)"
-    print("signer:", anchor_chain.signer_address(cfg),
-          "balance:", anchor_chain.balance_avax(cfg), "AVAX")
+    assert cfg, (
+        "ANCHOR_* env not set (need ANCHOR_RPC_URL, ANCHOR_CONTRACT_ADDRESS, ANCHOR_SIGNER_PRIVATE_KEY)"
+    )
+    print(
+        "signer:",
+        anchor_chain.signer_address(cfg),
+        "balance:",
+        anchor_chain.balance_avax(cfg),
+        "AVAX",
+    )
 
     session_id = "smoke-session-%d" % int(time.time())
     chain_head = "ab" * 32

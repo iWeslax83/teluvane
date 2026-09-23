@@ -1,6 +1,7 @@
+import hashlib
 import json
 import pathlib
-import hashlib
+
 from teluvane import merkle
 
 VECTORS = pathlib.Path(__file__).parent / "fixtures" / "merkle_vectors.json"
@@ -54,8 +55,9 @@ def test_root_from_proof_reconstructs_built_root():
 
 
 def test_root_from_proof_single_leaf_is_leaf_hash():
-    assert (merkle.root_from_proof("o", "s", "aa", [])
-            == "0x" + merkle.leaf_hash("o", "s", "aa").hex())
+    assert (
+        merkle.root_from_proof("o", "s", "aa", []) == "0x" + merkle.leaf_hash("o", "s", "aa").hex()
+    )
 
 
 def test_tampered_head_fails_verification():
@@ -70,11 +72,13 @@ def test_emit_vectors_file():
     for n in (1, 2, 3, 5):
         leaves = [("org-é", f"sess-{i}", f"{i:064x}") for i in range(n)]
         root, proofs = merkle.build_tree(leaves)
-        cases.append({
-            "leaves": [{"org_id": o, "session_id": s, "chain_head": h} for o, s, h in leaves],
-            "root": root,
-            "proofs": [proofs[(o, s)] for o, s, _ in leaves],
-        })
+        cases.append(
+            {
+                "leaves": [{"org_id": o, "session_id": s, "chain_head": h} for o, s, h in leaves],
+                "root": root,
+                "proofs": [proofs[(o, s)] for o, s, _ in leaves],
+            }
+        )
     VECTORS.parent.mkdir(parents=True, exist_ok=True)
     VECTORS.write_text(json.dumps({"cases": cases}, indent=2, ensure_ascii=False))
     assert VECTORS.exists()

@@ -2,6 +2,7 @@
 """Static USD-per-million-token pricing for known models, used to compute cost_usd on
 llm_call events when a caller supplies model + token counts but not an explicit cost.
 Unknown models simply get no computed cost (None), never a guess."""
+
 from typing import Optional
 
 # (input $/1M tokens, output $/1M tokens)
@@ -17,10 +18,13 @@ PRICING_PER_MILLION: dict[str, tuple[float, float]] = {
     "o3": (2.0, 8.0),
 }
 
-def compute_cost(model: Optional[str], input_tokens: Optional[int],
-                  output_tokens: Optional[int]) -> Optional[float]:
+
+def compute_cost(
+    model: Optional[str], input_tokens: Optional[int], output_tokens: Optional[int]
+) -> Optional[float]:
     if not model or model not in PRICING_PER_MILLION:
         return None
     in_rate, out_rate = PRICING_PER_MILLION[model]
-    return round((input_tokens or 0) * in_rate / 1_000_000
-                 + (output_tokens or 0) * out_rate / 1_000_000, 8)
+    return round(
+        (input_tokens or 0) * in_rate / 1_000_000 + (output_tokens or 0) * out_rate / 1_000_000, 8
+    )

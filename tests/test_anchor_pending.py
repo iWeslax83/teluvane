@@ -5,17 +5,20 @@ from teluvane.db import get_pool
 from teluvane.schema import Event
 from teluvane.store import Store
 
-
-CFG = anchor.AnchorConfig(rpc_url="x", contract_address="0x0", signer_key="0x0",
-                          min_session_age_minutes=30)
+CFG = anchor.AnchorConfig(
+    rpc_url="x", contract_address="0x0", signer_key="0x0", min_session_age_minutes=30
+)
 
 
 def _mk_org(plan="pro"):
     with get_pool().connection() as conn, conn.cursor() as cur:
-        cur.execute("TRUNCATE events, orgs, org_members, anchor_batches, session_anchors "
-                    "RESTART IDENTITY CASCADE")
-        cur.execute("INSERT INTO orgs(id,name,owner_user_id,plan) VALUES('org1','o','u',%s)",
-                    (plan,))
+        cur.execute(
+            "TRUNCATE events, orgs, org_members, anchor_batches, session_anchors "
+            "RESTART IDENTITY CASCADE"
+        )
+        cur.execute(
+            "INSERT INTO orgs(id,name,owner_user_id,plan) VALUES('org1','o','u',%s)", (plan,)
+        )
         conn.commit()
 
 
@@ -62,6 +65,7 @@ def test_already_anchored_through_latest_seq_is_not_pending():
     s.append("org1", Event(agent_id="a", session_id="s4", kind="llm_call", intent="x"))
     _age_session("s4", 45)
     from teluvane import anchor_store
+
     bid = anchor_store.insert_batch(get_pool(), "0xr", 43113, 1)
     head = anchor.pending_leaves(get_pool(), CFG)[0][3]
     anchor_store.insert_session_anchor(get_pool(), "org1", "s4", 1, bid, head, [])
@@ -74,6 +78,7 @@ def test_session_grown_past_its_anchor_is_pending_again():
     s.append("org1", Event(agent_id="a", session_id="s5", kind="llm_call", intent="x"))
     _age_session("s5", 45)
     from teluvane import anchor_store
+
     bid = anchor_store.insert_batch(get_pool(), "0xr2", 43113, 1)
     anchor_store.insert_session_anchor(get_pool(), "org1", "s5", 1, bid, "aa", [])
     s.append("org1", Event(agent_id="a", session_id="s5", kind="llm_call", intent="y"))

@@ -4,6 +4,7 @@ Inert unless the ANCHOR_* env vars are set: chain_config() returns None and ever
 entry point is a no-op. Never raises into the API request path; RPC and wallet
 failures degrade to "not yet anchored" plus a warning log.
 """
+
 import logging
 import os
 from dataclasses import dataclass, field
@@ -61,18 +62,21 @@ def chain_config() -> AnchorConfig | None:
 
     rpc_urls = tuple(u.strip() for u in rpc.split(",") if u.strip())
     return AnchorConfig(
-        rpc_url=rpc_urls[0], contract_address=addr, signer_key=key, rpc_urls=rpc_urls,
+        rpc_url=rpc_urls[0],
+        contract_address=addr,
+        signer_key=key,
+        rpc_urls=rpc_urls,
         chain_id=_int("ANCHOR_CHAIN_ID", 43113),
         min_session_age_minutes=_int("ANCHOR_MIN_SESSION_AGE_MINUTES", 30),
         batch_interval_minutes=_int("ANCHOR_BATCH_INTERVAL_MINUTES", 10),
         confirmations=_int("ANCHOR_CONFIRMATIONS", 5),
         submit_timeout_minutes=_int("ANCHOR_SUBMIT_TIMEOUT_MINUTES", 30),
         low_balance_alert_avax=_float("ANCHOR_LOW_BALANCE_ALERT_AVAX", 0.05),
-        max_forced_runs_per_org_per_month=_int(
-            "ANCHOR_MAX_FORCED_RUNS_PER_ORG_PER_MONTH", 20),
+        max_forced_runs_per_org_per_month=_int("ANCHOR_MAX_FORCED_RUNS_PER_ORG_PER_MONTH", 20),
         forced_run_cooldown_minutes=_int("ANCHOR_FORCED_RUN_COOLDOWN_MINUTES", 5),
-        explorer_tx_url=os.environ.get("ANCHOR_EXPLORER_TX_URL",
-                                      "https://testnet.snowtrace.io/tx/"),
+        explorer_tx_url=os.environ.get(
+            "ANCHOR_EXPLORER_TX_URL", "https://testnet.snowtrace.io/tx/"
+        ),
     )
 
 
@@ -88,8 +92,9 @@ def pending_leaves(pool, cfg: AnchorConfig):
     """Pro-plan sessions quiet for >= cfg.min_session_age_minutes that are not yet
     anchored through their latest seq. Returns (org_id, session_id, through_seq,
     chain_head) tuples, where chain_head is the latest event hash."""
-    cutoff = (datetime.now(timezone.utc)
-              - timedelta(minutes=cfg.min_session_age_minutes)).isoformat()
+    cutoff = (
+        datetime.now(timezone.utc) - timedelta(minutes=cfg.min_session_age_minutes)
+    ).isoformat()
     with pool.connection() as conn, conn.cursor() as cur:
         cur.execute(_PENDING_SQL, (cutoff,))
         candidates = cur.fetchall()
@@ -101,8 +106,11 @@ def pending_leaves(pool, cfg: AnchorConfig):
         if anchor_store.max_anchored_seq(pool, org_id, session_id) >= through_seq:
             continue
         with pool.connection() as conn, conn.cursor() as cur:
-            cur.execute("SELECT hash FROM events WHERE org_id=%s AND session_id=%s "
-                        "ORDER BY seq DESC LIMIT 1", (org_id, session_id))
+            cur.execute(
+                "SELECT hash FROM events WHERE org_id=%s AND session_id=%s "
+                "ORDER BY seq DESC LIMIT 1",
+                (org_id, session_id),
+            )
             chain_head = cur.fetchone()[0]
         leaves.append((org_id, session_id, int(through_seq), chain_head))
     return leaves
@@ -131,33 +139,30 @@ def run_anchor_pass(pool, cfg: AnchorConfig) -> dict:
                 return {**empty, "skipped": "nothing-pending"}
             root, proofs = merkle.build_tree([(o, s, h) for o, s, _seq, h in leaves])
             batch_id = anchor_store.insert_batch_with_anchors(
-                pool, root, cfg.chain_id,
-                [(o, s, seq, h, proofs[(o, s)]) for o, s, seq, h in leaves])
+                pool,
+                root,
+                cfg.chain_id,
+                [(o, s, seq, h, proofs[(o, s)]) for o, s, seq, h in leaves],
+            )
 
             # A quiet session's leaf never changes, so re-anchoring after a failed
             # batch rebuilds the identical root and lands on the existing row.
             status = anchor_store.batch_status(pool, batch_id)
             if status == "mined":
-                log.info("anchor root %s already mined; re-linked %d sessions",
-                         root, len(leaves))
-                return {"anchored": len(leaves), "root": root, "tx_hash": None,
-                        "skipped": None}
+                log.info("anchor root %s already mined; re-linked %d sessions", root, len(leaves))
+                return {"anchored": len(leaves), "root": root, "tx_hash": None, "skipped": None}
             if status == "failed":
-                log.info("anchor root %s was failed; resetting batch %s to pending",
-                         root, batch_id)
+                log.info("anchor root %s was failed; resetting batch %s to pending", root, batch_id)
                 anchor_store.reset_batch_pending(pool, batch_id)
 
             try:
                 tx_hash = anchor_chain.submit_batch(cfg, root, len(leaves))
             except Exception:
                 log.exception("anchor submit failed; batch %s stays pending", batch_id)
-                return {"anchored": 0, "root": root, "tx_hash": None,
-                        "skipped": "submit-failed"}
+                return {"anchored": 0, "root": root, "tx_hash": None, "skipped": "submit-failed"}
             anchor_store.mark_submitted(pool, batch_id, tx_hash)
-            log.info("anchor batch submitted root=%s tx=%s sessions=%d",
-                     root, tx_hash, len(leaves))
-            return {"anchored": len(leaves), "root": root, "tx_hash": tx_hash,
-                    "skipped": None}
+            log.info("anchor batch submitted root=%s tx=%s sessions=%d", root, tx_hash, len(leaves))
+            return {"anchored": len(leaves), "root": root, "tx_hash": tx_hash, "skipped": None}
         except Exception:
             # A DB error here must not propagate out through run_anchor_cycle and
             # kill the scheduler tick for every other job.
@@ -187,8 +192,11 @@ def reconcile_pending(pool, cfg: AnchorConfig) -> None:
     try:
         bal = anchor_chain.balance_avax(cfg)
         if bal < cfg.low_balance_alert_avax:
-            log.warning("anchor signer balance low: %.4f AVAX (threshold %.4f)",
-                        bal, cfg.low_balance_alert_avax)
+            log.warning(
+                "anchor signer balance low: %.4f AVAX (threshold %.4f)",
+                bal,
+                cfg.low_balance_alert_avax,
+            )
     except Exception:
         log.exception("anchor balance check failed")
 
@@ -218,8 +226,11 @@ def reconcile_pending(pool, cfg: AnchorConfig) -> None:
             submitted_at = b["submitted_at"]
             if submitted_at and submitted_at.tzinfo is None:
                 submitted_at = submitted_at.replace(tzinfo=timezone.utc)
-            age_min = (datetime.now(timezone.utc) - submitted_at).total_seconds() / 60 \
-                if submitted_at else 0
+            age_min = (
+                (datetime.now(timezone.utc) - submitted_at).total_seconds() / 60
+                if submitted_at
+                else 0
+            )
             if age_min > cfg.submit_timeout_minutes:
                 log.warning("anchor batch %s timed out unmined; marking failed", b["id"])
                 anchor_store.mark_failed(pool, b["id"])
@@ -233,16 +244,27 @@ def reconcile_pending(pool, cfg: AnchorConfig) -> None:
         confirmations = max(0, head - r["block_number"] + 1)
         if confirmations >= cfg.confirmations:
             fee = r["gas_used"] * r["effective_gas_price"]
-            anchor_store.mark_mined(pool, b["id"], r["block_number"], r["gas_used"],
-                                    fee, confirmations)
-            log.info("anchor batch %s mined root=%s block=%d gas=%d",
-                     b["id"], b["root"], r["block_number"], r["gas_used"])
+            anchor_store.mark_mined(
+                pool, b["id"], r["block_number"], r["gas_used"], fee, confirmations
+            )
+            log.info(
+                "anchor batch %s mined root=%s block=%d gas=%d",
+                b["id"],
+                b["root"],
+                r["block_number"],
+                r["gas_used"],
+            )
         else:
             anchor_store.update_confirmations(pool, b["id"], r["block_number"], confirmations)
 
 
-def verify_session(pool, org_id: str, session_id: str, through_seq: int | None = None,
-                   cfg: AnchorConfig | None = None) -> dict:
+def verify_session(
+    pool,
+    org_id: str,
+    session_id: str,
+    through_seq: int | None = None,
+    cfg: AnchorConfig | None = None,
+) -> dict:
     """Recompute a session's anchored chain head and Merkle root from stored data,
     read anchoredAt(root) from the chain, and classify the result. Never raises on
     RPC failure: it degrades to status "rpc-unreachable". `org_id` and `proof` are
@@ -253,20 +275,35 @@ def verify_session(pool, org_id: str, session_id: str, through_seq: int | None =
     """
     cfg = cfg if cfg is not None else chain_config()
     from .store import Store
+
     store = Store(pool)
     events = store.events(org_id, session_id)
     total_seq = events[-1].seq if events else 0
 
-    row = (anchor_store.anchor_for_seq(pool, org_id, session_id, through_seq)
-           if through_seq else anchor_store.latest_anchor(pool, org_id, session_id))
+    row = (
+        anchor_store.anchor_for_seq(pool, org_id, session_id, through_seq)
+        if through_seq
+        else anchor_store.latest_anchor(pool, org_id, session_id)
+    )
 
     base = {
-        "anchored": False, "org_id": org_id, "proof": None,
-        "through_seq": None, "total_seq": total_seq, "root": None,
-        "tx_hash": None, "block_number": None, "confirmations": 0,
-        "mined_at": None, "onchain_ts": None, "head_stored": None,
-        "head_recomputed": None, "head_matches": False, "proof_ok": False,
-        "rpc_ok": True, "status": "not-anchored",
+        "anchored": False,
+        "org_id": org_id,
+        "proof": None,
+        "through_seq": None,
+        "total_seq": total_seq,
+        "root": None,
+        "tx_hash": None,
+        "block_number": None,
+        "confirmations": 0,
+        "mined_at": None,
+        "onchain_ts": None,
+        "head_stored": None,
+        "head_recomputed": None,
+        "head_matches": False,
+        "proof_ok": False,
+        "rpc_ok": True,
+        "status": "not-anchored",
         "is_public": anchor_store.is_public(pool, org_id, session_id),
     }
     if not row:
@@ -332,10 +369,15 @@ def anchor_health(pool) -> dict:
         return {"enabled": False}
 
     h = {
-        "enabled": True, "chain_id": cfg.chain_id, "rpc_ok": True,
-        "signer_address": None, "signer_balance_avax": None, "low_balance": False,
+        "enabled": True,
+        "chain_id": cfg.chain_id,
+        "rpc_ok": True,
+        "signer_address": None,
+        "signer_balance_avax": None,
+        "low_balance": False,
         "pending_batches": len(anchor_store.batches_by_status(pool, "pending", "submitted")),
-        "last_batch_at": None, "last_batch_tx": None,
+        "last_batch_at": None,
+        "last_batch_tx": None,
     }
     try:
         h["signer_address"] = anchor_chain.signer_address(cfg)

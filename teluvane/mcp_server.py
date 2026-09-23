@@ -17,6 +17,7 @@ One process = one recorded session by default (a fresh session_id generated at s
 whole Claude Desktop conversation lands in TELUVANE as a single auditable session. Pass an
 explicit session_id to any tool to record into a different one instead.
 """
+
 import os
 import uuid
 
@@ -31,30 +32,55 @@ DEFAULT_SESSION_ID = "mcp-" + uuid.uuid4().hex[:12]
 
 mcp = FastMCP("teluvane")
 
+
 def _recorder(session_id: str | None) -> TeluvaneRecorder:
     if not API_KEY:
         raise RuntimeError("TELUVANE_API_KEY is not set")
-    return TeluvaneRecorder(agent_id=AGENT_ID, session_id=session_id or DEFAULT_SESSION_ID,
-                            base_url=BASE_URL, api_key=API_KEY)
+    return TeluvaneRecorder(
+        agent_id=AGENT_ID,
+        session_id=session_id or DEFAULT_SESSION_ID,
+        base_url=BASE_URL,
+        api_key=API_KEY,
+    )
+
 
 @mcp.tool()
-def record_llm_call(intent: str, output: str = "", session_id: str | None = None,
-                    model: str | None = None, input_tokens: int | None = None,
-                    output_tokens: int | None = None) -> str:
+def record_llm_call(
+    intent: str,
+    output: str = "",
+    session_id: str | None = None,
+    model: str | None = None,
+    input_tokens: int | None = None,
+    output_tokens: int | None = None,
+) -> str:
     """Record that the agent made an LLM call. `intent` should say why in one sentence,
     since that's what the tribunal audits against, not the raw prompt/completion. Pass
     model + input_tokens/output_tokens when known, for cost tracking in /stats/usage."""
-    _recorder(session_id).record_llm_call(intent=intent, output=output, model=model,
-                                          input_tokens=input_tokens, output_tokens=output_tokens)
+    _recorder(session_id).record_llm_call(
+        intent=intent,
+        output=output,
+        model=model,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+    )
     return f"recorded llm_call to session {session_id or DEFAULT_SESSION_ID}"
 
+
 @mcp.tool()
-def record_tool_call(tool: str, args: dict, intent: str = "",
-                     approved_by: str | None = None, session_id: str | None = None) -> str:
+def record_tool_call(
+    tool: str,
+    args: dict,
+    intent: str = "",
+    approved_by: str | None = None,
+    session_id: str | None = None,
+) -> str:
     """Record that the agent invoked a tool. Set approved_by (e.g. a user id, or "auto" for
     an allowlisted action) when a human or policy explicitly authorized this call."""
-    _recorder(session_id).record_tool_call(tool=tool, args=args, intent=intent, approved_by=approved_by)
+    _recorder(session_id).record_tool_call(
+        tool=tool, args=args, intent=intent, approved_by=approved_by
+    )
     return f"recorded tool_call({tool}) to session {session_id or DEFAULT_SESSION_ID}"
+
 
 @mcp.tool()
 def record_tool_result(tool: str, output: str, session_id: str | None = None) -> str:
@@ -62,8 +88,10 @@ def record_tool_result(tool: str, output: str, session_id: str | None = None) ->
     _recorder(session_id).record_tool_result(tool=tool, output=output)
     return f"recorded tool_result({tool}) to session {session_id or DEFAULT_SESSION_ID}"
 
+
 def main() -> None:
     mcp.run(transport="stdio")
+
 
 if __name__ == "__main__":
     main()

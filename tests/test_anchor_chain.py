@@ -1,9 +1,13 @@
 from unittest.mock import MagicMock, patch
+
 from teluvane import anchor_chain
 from teluvane.anchor import AnchorConfig
 
-CFG = AnchorConfig(rpc_url="http://rpc", contract_address="0x00000000000000000000000000000000000000aa",
-                   signer_key="0x" + "11" * 32)
+CFG = AnchorConfig(
+    rpc_url="http://rpc",
+    contract_address="0x00000000000000000000000000000000000000aa",
+    signer_key="0x" + "11" * 32,
+)
 
 
 def _fake_w3():
@@ -27,8 +31,10 @@ def test_submit_batch_signs_and_sends():
     w3.eth.account.sign_transaction.return_value = signed
     w3.eth.send_raw_transaction.return_value = bytes.fromhex("ab" * 32)
 
-    with patch.object(anchor_chain, "make_w3", return_value=w3), \
-         patch.object(anchor_chain, "signer_address", return_value="0xSigner"):
+    with (
+        patch.object(anchor_chain, "make_w3", return_value=w3),
+        patch.object(anchor_chain, "signer_address", return_value="0xSigner"),
+    ):
         txh = anchor_chain.submit_batch(CFG, "0x" + "cd" * 32, 3)
     assert txh == "0x" + "ab" * 32
     assert w3.eth.send_raw_transaction.call_args[0][0] == b"raw"

@@ -13,7 +13,10 @@ HOSTED_AUDIT_MONTHLY_LIMIT_PRO = int(os.environ.get("HOSTED_AUDIT_MONTHLY_LIMIT_
 
 
 def hosted_audit_limit_for_plan(plan: str) -> int:
-    return {"starter": HOSTED_AUDIT_MONTHLY_LIMIT_STARTER, "pro": HOSTED_AUDIT_MONTHLY_LIMIT_PRO}.get(plan, 0)
+    return {
+        "starter": HOSTED_AUDIT_MONTHLY_LIMIT_STARTER,
+        "pro": HOSTED_AUDIT_MONTHLY_LIMIT_PRO,
+    }.get(plan, 0)
 
 
 def current_period() -> str:
@@ -23,8 +26,9 @@ def current_period() -> str:
 def hosted_audit_count(org_id: str, period: str | None = None) -> int:
     period = period or current_period()
     with get_pool().connection() as conn, conn.cursor() as cur:
-        cur.execute("SELECT count FROM hosted_audit_usage WHERE org_id=%s AND period=%s",
-                    (org_id, period))
+        cur.execute(
+            "SELECT count FROM hosted_audit_usage WHERE org_id=%s AND period=%s", (org_id, period)
+        )
         row = cur.fetchone()
     return row[0] if row else 0
 
@@ -40,7 +44,8 @@ def increment_hosted_audit_usage(org_id: str, period: str | None = None) -> int:
             "INSERT INTO hosted_audit_usage(org_id,period,count) VALUES(%s,%s,1) "
             "ON CONFLICT (org_id,period) DO UPDATE SET count = hosted_audit_usage.count + 1 "
             "RETURNING count",
-            (org_id, period))
+            (org_id, period),
+        )
         new_count = cur.fetchone()[0]
         conn.commit()
     return new_count

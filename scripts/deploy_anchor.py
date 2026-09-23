@@ -13,13 +13,14 @@ never run in CI. The deployer address becomes the contract owner (the only
 account allowed to call anchorBatch), so deploy with the same key you will set
 as ANCHOR_SIGNER_PRIVATE_KEY on the backend.
 """
+
 import os
 import sys
 from pathlib import Path
 
+from eth_account import Account
 from solcx import compile_standard, install_solc
 from web3 import Web3
-from eth_account import Account
 
 SOL = Path("contracts/SessionAnchorRegistry.sol")
 SOLC_VERSION = "0.8.24"
@@ -39,9 +40,7 @@ def main() -> int:
         {
             "language": "Solidity",
             "sources": {SOL.name: {"content": SOL.read_text()}},
-            "settings": {
-                "outputSelection": {"*": {"*": ["abi", "evm.bytecode.object"]}}
-            },
+            "settings": {"outputSelection": {"*": {"*": ["abi", "evm.bytecode.object"]}}},
         },
         solc_version=SOLC_VERSION,
     )

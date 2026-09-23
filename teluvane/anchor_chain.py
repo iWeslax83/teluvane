@@ -1,5 +1,6 @@
 """Thin web3.py wrapper for the SessionAnchorRegistry contract. All calls are
 synchronous and single-shot; callers handle retries and error isolation."""
+
 import json
 import logging
 
@@ -28,6 +29,7 @@ def make_w3(cfg):
     (single provider, no health check) when rpc_urls is unset, so callers and
     tests that build an AnchorConfig without rpc_urls keep working unchanged."""
     from web3 import Web3
+
     urls = list(cfg.rpc_urls) if getattr(cfg, "rpc_urls", None) else [cfg.rpc_url]
     if len(urls) == 1:
         return Web3(Web3.HTTPProvider(urls[0], request_kwargs={"timeout": 15}))
@@ -40,8 +42,7 @@ def make_w3(cfg):
             return w3
         except Exception as exc:
             last_exc = exc
-            log.warning("anchor RPC provider %d/%d unreachable, trying next",
-                        i + 1, len(urls))
+            log.warning("anchor RPC provider %d/%d unreachable, trying next", i + 1, len(urls))
     # Every provider failed the health check: surface the last error rather than
     # silently returning a dead client, so callers' existing except-and-log
     # handling still triggers.
@@ -50,6 +51,7 @@ def make_w3(cfg):
 
 def _account(cfg):
     from eth_account import Account
+
     return Account.from_key(cfg.signer_key)
 
 
@@ -59,6 +61,7 @@ def signer_address(cfg) -> str:
 
 def _contract(cfg, w3):
     from web3 import Web3
+
     return w3.eth.contract(address=Web3.to_checksum_address(cfg.contract_address), abi=ABI)
 
 
@@ -77,7 +80,7 @@ def block_number(cfg) -> int:
 # re-queryable. This keeps GET /evidence/{id} and GET /anchor/{id} off the RPC
 # after the first hit instead of blocking a worker for up to 15 s per request.
 _ANCHORED_AT_CACHE: dict[str, int] = {}
-_ANCHORED_AT_CACHE_MAX = 10_000   # bound the process memory a long-lived server holds
+_ANCHORED_AT_CACHE_MAX = 10_000  # bound the process memory a long-lived server holds
 
 
 def read_anchored_at(cfg, root_hex: str) -> int:
@@ -112,14 +115,16 @@ def submit_batch(cfg, root_hex: str, session_count: int) -> str:
         gas = int(fn.estimate_gas({"from": addr}) * 1.25)
     except Exception:
         gas = 120000
-    tx = fn.build_transaction({
-        "from": addr,
-        "nonce": nonce,
-        "chainId": cfg.chain_id,
-        "gas": gas,
-        "maxPriorityFeePerGas": max_priority,
-        "maxFeePerGas": base * 2 + max_priority,
-    })
+    tx = fn.build_transaction(
+        {
+            "from": addr,
+            "nonce": nonce,
+            "chainId": cfg.chain_id,
+            "gas": gas,
+            "maxPriorityFeePerGas": max_priority,
+            "maxFeePerGas": base * 2 + max_priority,
+        }
+    )
     signed = w3.eth.account.sign_transaction(tx, private_key=cfg.signer_key)
     txh = w3.eth.send_raw_transaction(signed.raw_transaction)
     h = txh.hex()

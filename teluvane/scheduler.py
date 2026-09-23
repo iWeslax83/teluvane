@@ -4,15 +4,16 @@ re-audits any due org's sessions. This runs inside the same web process as the A
 does work while that process is warm; a Render free-tier instance that's asleep or restarting
 skips ticks like any other in-process timer would. That tradeoff is what "automated" can mean
 without a separate worker/cron service, and is disclosed as such wherever this is documented."""
+
 from datetime import datetime, timedelta, timezone
 
 from . import anchor
-from .db import get_pool
+from .auditlock import audited_run
 from .billing import org_plan
 from .byok import get_byok
-from .orgs import get_policy_framework
-from .auditlock import audited_run
 from .custom_rules import effective_pack
+from .db import get_pool
+from .orgs import get_policy_framework
 
 TICK_INTERVAL_SECONDS = 60
 
@@ -23,7 +24,10 @@ def _anchor_due(interval_minutes: int) -> bool:
     """True at most once per `interval_minutes`; records the run time when it fires."""
     global _last_anchor_run
     now = datetime.now(timezone.utc)
-    if _last_anchor_run is None or (now - _last_anchor_run).total_seconds() >= interval_minutes * 60:
+    if (
+        _last_anchor_run is None
+        or (now - _last_anchor_run).total_seconds() >= interval_minutes * 60
+    ):
         _last_anchor_run = now
         return True
     return False
@@ -40,38 +44,54 @@ def run_anchor_cycle() -> None:
     if _anchor_due(cfg.batch_interval_minutes):
         anchor.run_anchor_pass(pool, cfg)
 
+
 def get_schedule(org_id: str) -> dict:
     with get_pool().connection() as conn, conn.cursor() as cur:
-        cur.execute("SELECT enabled, interval_minutes, last_run_at FROM org_audit_schedule "
-                    "WHERE org_id=%s", (org_id,))
+        cur.execute(
+            "SELECT enabled, interval_minutes, last_run_at FROM org_audit_schedule WHERE org_id=%s",
+            (org_id,),
+        )
         row = cur.fetchone()
     if not row:
         return {"enabled": False, "interval_minutes": 60, "last_run_at": None}
-    return {"enabled": row[0], "interval_minutes": row[1],
-            "last_run_at": row[2].isoformat() if row[2] else None}
+    return {
+        "enabled": row[0],
+        "interval_minutes": row[1],
+        "last_run_at": row[2].isoformat() if row[2] else None,
+    }
+
 
 def set_schedule(org_id: str, enabled: bool, interval_minutes: int) -> None:
-    interval_minutes = max(15, interval_minutes)   # floor: don't let a typo hammer the tribunal
+    interval_minutes = max(15, interval_minutes)  # floor: don't let a typo hammer the tribunal
     with get_pool().connection() as conn, conn.cursor() as cur:
         cur.execute(
             "INSERT INTO org_audit_schedule(org_id,enabled,interval_minutes) VALUES(%s,%s,%s) "
             "ON CONFLICT (org_id) DO UPDATE SET enabled=EXCLUDED.enabled, "
-            "interval_minutes=EXCLUDED.interval_minutes", (org_id, enabled, interval_minutes))
+            "interval_minutes=EXCLUDED.interval_minutes",
+            (org_id, enabled, interval_minutes),
+        )
         conn.commit()
+
 
 def _due_orgs() -> list[str]:
     with get_pool().connection() as conn, conn.cursor() as cur:
         cur.execute(
-            "SELECT org_id, interval_minutes, last_run_at FROM org_audit_schedule WHERE enabled")
+            "SELECT org_id, interval_minutes, last_run_at FROM org_audit_schedule WHERE enabled"
+        )
         rows = cur.fetchall()
     now = datetime.now(timezone.utc)
-    return [org_id for org_id, interval_minutes, last_run_at in rows
-            if last_run_at is None or now - last_run_at >= timedelta(minutes=interval_minutes)]
+    return [
+        org_id
+        for org_id, interval_minutes, last_run_at in rows
+        if last_run_at is None or now - last_run_at >= timedelta(minutes=interval_minutes)
+    ]
+
 
 def _mark_ran(org_id: str) -> None:
     with get_pool().connection() as conn, conn.cursor() as cur:
         cur.execute("UPDATE org_audit_schedule SET last_run_at=now() WHERE org_id=%s", (org_id,))
         conn.commit()
+
 
 def run_due_schedules(store, packs, hosted_api_key: str | None = None) -> dict[str, int]:
     """Re-audit every session for each org whose schedule is due. `packs` is a

@@ -1,10 +1,11 @@
 # teluvane/teluvane/migrate.py
 import pathlib
+
 from .db import get_pool
 
 MIGRATIONS_DIR = pathlib.Path(__file__).resolve().parent.parent / "migrations"
 
-_LOCK_KEY = 0x7454_4C56   # "tTLV"
+_LOCK_KEY = 0x7454_4C56  # "tTLV"
 
 
 def apply_migrations(pool=None) -> list[str]:
@@ -20,7 +21,7 @@ def apply_migrations(pool=None) -> list[str]:
         try:
             _apply(conn, newly_applied)
         except Exception:
-            conn.rollback()   # clear the aborted-txn state so the unlock below can run
+            conn.rollback()  # clear the aborted-txn state so the unlock below can run
             raise
         finally:
             with conn.cursor() as cur:
@@ -32,7 +33,8 @@ def _apply(conn, newly_applied: list[str]) -> None:
     with conn.cursor() as cur:
         cur.execute(
             "CREATE TABLE IF NOT EXISTS schema_migrations ("
-            " name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())")
+            " name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+        )
         # Deny-all RLS, matching every other public table (migrations/*.sql).
         # Idempotent: re-enabling is a no-op. The service-role pool bypasses RLS.
         cur.execute("ALTER TABLE schema_migrations ENABLE ROW LEVEL SECURITY")

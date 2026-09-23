@@ -3,6 +3,7 @@
 as anchor.chain_config(): missing config means the feature does nothing rather
 than raising. sentry_sdk.capture_exception() is itself always safe to call even
 when sentry_sdk.init() was never run, so call sites don't need to check first."""
+
 import os
 
 import sentry_sdk

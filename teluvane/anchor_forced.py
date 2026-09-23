@@ -3,6 +3,7 @@ cannot burn the shared signer wallet by spamming forced anchor passes.
 
 State lives in the anchor_forced_runs table, not process memory: a restart or a
 second web instance must not reset the cap."""
+
 from datetime import datetime, timezone
 
 from .db import get_pool
@@ -30,8 +31,9 @@ def check_and_record(org_id: str, cooldown_minutes: int, monthly_cap: int) -> st
                 conn.commit()
                 return "cooldown"
 
-        cur.execute("SELECT count FROM anchor_forced_runs WHERE org_id=%s AND period=%s",
-                    (org_id, period))
+        cur.execute(
+            "SELECT count FROM anchor_forced_runs WHERE org_id=%s AND period=%s", (org_id, period)
+        )
         row = cur.fetchone()
         if (row[0] if row else 0) >= monthly_cap:
             conn.commit()
@@ -42,6 +44,7 @@ def check_and_record(org_id: str, cooldown_minutes: int, monthly_cap: int) -> st
             "VALUES(%s,%s,1,now()) "
             "ON CONFLICT (org_id, period) DO UPDATE SET "
             "count = anchor_forced_runs.count + 1, last_run_at = now()",
-            (org_id, period))
+            (org_id, period),
+        )
         conn.commit()
     return None

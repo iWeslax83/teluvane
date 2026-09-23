@@ -1,19 +1,23 @@
 import pytest
-from teluvane.crypto import encrypt, decrypt
-from teluvane.byok import set_byok, get_byok, clear_byok, has_byok
-from teluvane.orgs import create_org
+
+from teluvane.byok import clear_byok, get_byok, has_byok, set_byok
+from teluvane.crypto import decrypt, encrypt
 from teluvane.db import get_pool
+from teluvane.orgs import create_org
+
 
 def test_encrypt_roundtrip():
     ct = encrypt("sk-ant-secret123")
     assert ct != "sk-ant-secret123"
     assert decrypt(ct) == "sk-ant-secret123"
 
+
 def test_wrong_key_cannot_decrypt(monkeypatch):
     ct = encrypt("sk-ant-secret123")
     monkeypatch.setenv("TELUVANE_SECRET_KEY", "ffqFvOwEiqCI8OeEdc_XU2ot3BR-Sf_oA2N2hhQlylM=")
     with pytest.raises(Exception):
         decrypt(ct)
+
 
 def test_set_get_clear_byok(store):
     org = create_org("Acme", "u1")
@@ -23,6 +27,7 @@ def test_set_get_clear_byok(store):
     assert get_byok(org) == "sk-ant-live-xyz"
     clear_byok(org)
     assert get_byok(org) is None
+
 
 def test_ciphertext_at_rest_is_not_plaintext(store):
     org = create_org("Acme", "u1")
