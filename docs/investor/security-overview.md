@@ -10,8 +10,7 @@ convention (`teluvane/store.py`, `_assert_scoped`). One org cannot read or write
 data through the API even if a query is written incorrectly upstream.
 
 ## Authentication
-- Dashboard users authenticate through Supabase (email/password), JWTs are verified against
-  Supabase's published JWKS (asymmetric, not a shared secret).
+- Dashboard users authenticate through Supabase (email/password). Tokens are verified against Supabase's published JWKS when the project uses asymmetric signing keys, and against the project's shared JWT secret on older projects. Both paths are in teluvane/auth.py.
 - Machine clients (agents posting events) authenticate with per-org API keys, separate from
   user login, so a leaked dashboard session can't be used to forge event ingestion and vice
   versa.
