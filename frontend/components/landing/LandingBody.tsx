@@ -51,7 +51,7 @@ function FadeInSection({ children, style, id, eager }: { children: React.ReactNo
 }
 
 const stats = [
-  { num: "€35M", text: "Maximum fine for non-compliance with EU AI Act obligations, or 7% of global revenue." },
+  { num: "€35M", text: "Maximum fine for the most serious violations (prohibited AI practices, Art.5), or 7% of global revenue. Other obligations carry lower tiers." },
   { num: "2026", text: "Article 50 transparency obligations (chatbot and synthetic-media disclosure) take effect. Full high-risk obligations are delayed to December 2027 under the Digital Omnibus." },
   { num: "Art.15", text: "Robustness and cybersecurity requirements your agent logs must now demonstrate." },
 ];
