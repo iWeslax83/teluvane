@@ -1,13 +1,13 @@
 # TELUVANE
 
-> Tamper-evident flight recorder and autonomous compliance tribunal for AI agents. Records every AI agent action into a SHA-256 hash-chained log, audits it against the EU AI Act with a multi-agent tribunal, and exports regulator-ready evidence packs.
+> Tamper-evident flight recorder and autonomous compliance tribunal for AI agents. Records every AI agent action into a SHA-256 hash-chained log, audits it against the EU AI Act with an LLM tribunal (deterministic offline detectors when no API key is set), and exports regulator-ready evidence packs.
 
 TELUVANE is for teams running AI agents in production who need auditor-ready proof of what those agents did, not just debugging traces.
 
 ## Core capabilities
 
 - Recorder: every agent action (LLM calls, tool invocations, results) is appended to a SHA-256 hash-chained log. A silent edit breaks the chain immediately.
-- Tribunal: an autonomous multi-agent panel audits the full log against a structured EU AI Act policy pack, flagging violations with cited evidence, article references, severity, and confidence score.
+- Tribunal: an LLM auditor checks the full log against a structured EU AI Act policy pack, flagging violations with cited evidence, article references, severity, and confidence score.
 - Replay: reconstruct any incident step by step, from the triggering prompt through the tool call to the root cause.
 - Evidence Pack: one-click export of an auditor-ready compliance report.
 
