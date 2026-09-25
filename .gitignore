@@ -23,3 +23,9 @@ sdk-js/dist/
 contracts/lib/
 contracts/out/
 contracts/cache/
+
+# local agent tooling and personal notes (kept on disk, not in the repo)
+.agents/
+.claude/skills/
+frontend/.vade-report
+dontforgettomakeitlooklikearealwebsite.txt
