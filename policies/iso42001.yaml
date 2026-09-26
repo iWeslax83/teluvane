@@ -9,12 +9,14 @@ rules:
     detector_hint: "tool_call using a tool or targeting a system outside the agent's documented allowlist."
     keywords: ["out of scope", "unauthorized tool", "unexpected system"]
   - id: missing_risk_assessment
+    detector: unapproved_state_change
     description: "A high-impact action proceeded without the documented risk assessment ISO 42001 requires before it."
     severity: high
     framework_ref: "Clause 6.1 actions to address risks and opportunities"
     detector_hint: "tool_call with real-world consequence (payment, deletion, external send) and no recorded approval."
     keywords: ["no risk assessment", "unreviewed", "without approval"]
   - id: third_party_data_misuse
+    detector: exfiltration
     description: "Data was sent to a third party or destination outside the organization's approved supplier list."
     severity: critical
     framework_ref: "Clause 8.1 operational planning and control"
