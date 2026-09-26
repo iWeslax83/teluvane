@@ -34,4 +34,15 @@ describe("LandingBody", () => {
     const opening = container.querySelector("#opening") as HTMLElement;
     expect(opening.style.opacity).toBe("1");
   });
+
+  it("shows an MCP config the server can actually load", () => {
+    render(<LandingBody />);
+    expect(screen.getByText(/"command": "teluvane-mcp"/)).toBeTruthy();
+    expect(screen.queryByText(/api\.teluvane\.com\/mcp/)).toBeNull();
+  });
+
+  it("carries no invented numbers or overstated claims", () => {
+    const { container } = render(<LandingBody />);
+    expect(container.textContent).not.toMatch(/4471|0\.94|multi-agent/i);
+  });
 });

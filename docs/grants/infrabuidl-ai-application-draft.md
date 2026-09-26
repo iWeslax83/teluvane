@@ -1,10 +1,9 @@
 # infraBUIDL(AI) Application Draft — TELUVANE
 
-> Status: **draft, not yet submitted.** This is Plan 3 Step A1
-> (`docs/superpowers/plans/2026-08-24-plan-3-grant-and-positioning.md`). Submission (A4) is
-> gated on Plan 1 (`docs/superpowers/plans/2026-08-23-plan-1-chain-tip-anchoring.md`) being live
-> on Fuji or mainnet with a working `/verify/public/{session_id}` endpoint — an application
-> pointing at a running system beats one pointing at a design doc. Do not submit this draft as-is.
+> Status: **submitted** on `[fill in: submission date]`. Per ROADMAP finding F8, the text as
+> submitted may still name the old contract (`TeluvaneAnchorRegistry`, `anchor(bytes32)`,
+> `Anchored`) that this draft has since corrected below. See the reconciliation checklist at the
+> bottom of this file for what only the maintainer can check against the submitted text.
 
 **Target program:** infraBUIDL(AI), Avalanche Foundation — infrabuidl.com, rolling application,
 no fixed deadline.
@@ -26,9 +25,10 @@ database wasn't altered after the fact. We're removing that trust requirement by
 anchoring session chain-tip hashes — batched via a Merkle tree — to **Avalanche C-Chain**, so
 tamper-evidence becomes independently, publicly checkable by anyone with a block explorer, not
 just asserted by us. A minimal, non-upgradable contract
-(`TeluvaneAnchorRegistry.sol`, single `anchor(bytes32 root)` function, `Anchored` event as the
-only on-chain state) is the whole footprint — no raw data, no evidence-pack content, no PII ever
-touches the chain, only hashes.
+(`SessionAnchorRegistry.sol`: one owner-only `anchorBatch(bytes32 root, uint256 sessionCount)`
+write, a public `anchoredAt(bytes32)` read, and a `BatchAnchored` event; nothing else is stored)
+is the whole footprint, no raw data, no evidence-pack content, no PII ever touches the chain,
+only hashes.
 
 Once Phase 2 ships, Tribunal compliance verdicts get published as ERC-8004 Validation Registry
 attestations: a 0–100 validation score (deterministic function of verdict severity/confidence)
@@ -114,3 +114,12 @@ its own; ERC-8004 is upside, not the load-bearing part of the pitch.
 - **A5** — join Avalanche Discord (discord.com/invite/avax) for 1:1 developer feedback, independent
   of the grant process.
 - **A6** — Avalanche Community Grants (Gitcoin), secondary channel, after A4.
+
+## Reconciliation with the submitted application (maintainer, manual)
+
+- [ ] Open the text as submitted in the grant portal.
+- [ ] Compare it with the facts above. Note every place it names TeluvaneAnchorRegistry,
+      anchor(bytes32), or an Anchored event, or claims a mainnet deployment, users,
+      customers or traction that do not exist.
+- [ ] Decide whether to send the program a short correction. Do not send anything until you
+      have decided; nothing in this repo sends it for you.

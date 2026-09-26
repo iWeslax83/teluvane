@@ -11,6 +11,7 @@ import LandingInteractionStyles from "./LandingInteractionStyles";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { BG, INK, ACCENT, MUTED, BORDER } from "@/lib/landingTheme";
 import { landingMono } from "@/lib/landingFont";
+import { DEMO, shortHash } from "@/lib/demoSession";
 
 const MONO_STACK = landingMono.style.fontFamily;
 
@@ -50,7 +51,7 @@ function FadeInSection({ children, style, id, eager }: { children: React.ReactNo
 }
 
 const stats = [
-  { num: "€35M", text: "Maximum fine for non-compliance with EU AI Act obligations, or 7% of global revenue." },
+  { num: "€35M", text: "Maximum fine for the most serious violations (prohibited AI practices, Art.5), or 7% of global revenue. Other obligations carry lower tiers." },
   { num: "2026", text: "Article 50 transparency obligations (chatbot and synthetic-media disclosure) take effect. Full high-risk obligations are delayed to December 2027 under the Digital Omnibus." },
   { num: "Art.15", text: "Robustness and cybersecurity requirements your agent logs must now demonstrate." },
 ];
@@ -63,7 +64,7 @@ const trustPoints = [
   },
   {
     title: "Two separate credential paths.",
-    desc: "Dashboard logins (Supabase, JWT verified against Supabase's published keys) and agent event ingestion (per-org API keys) never share credentials. A leaked dashboard session can't be used to forge log entries, and vice versa.",
+    desc: "Dashboard logins (Supabase; tokens are checked against the project's published signing keys, or its shared secret on older projects) and agent event ingestion (per-org API keys) never share credentials. A leaked dashboard session can't be used to forge log entries, and vice versa.",
     code: "verify_jwt(session) != verify_api_key(org_key)  # disjoint paths",
   },
   {
@@ -73,26 +74,28 @@ const trustPoints = [
   },
 ];
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://YOUR-API-HOST";
+
 const steps = [
   {
     title: "Connect",
-    desc: "Point Claude Desktop or Claude Code at the TELUVANE MCP server with one config file, no code in the agent. Any other agent can POST to /events with an API key.",
-    artifact: '{\n  "mcpServers": {\n    "teluvane": {\n      "url": "https://api.teluvane.com/mcp"\n    }\n  }\n}',
+    desc: "Install the recorder from the GitHub repo (pip install -e .), then add it to Claude Desktop or Claude Code as an MCP server. No code in the agent. Any other agent can POST to /events with an API key.",
+    artifact: `{\n  "mcpServers": {\n    "teluvane": {\n      "command": "teluvane-mcp",\n      "env": {\n        "TELUVANE_URL": "${API_URL}",\n        "TELUVANE_API_KEY": "tv_live_..."\n      }\n    }\n  }\n}`,
   },
   {
     title: "Recorder",
-    desc: "Every agent action, LLM call, tool invocation, and result is appended to a SHA-256 hash-chained log. Any silent edit breaks the chain immediately.",
-    artifact: "event #4471 · tool_call\naction: send_email\nhash: 9f2a1c...e08b\nappended, chain: INTACT",
+    desc: "Every agent action, LLM call, tool invocation, and result is appended to a SHA-256 hash-chained log. Any silent edit breaks the chain when it is next verified.",
+    artifact: `demo session · event #2 · tool_call\naction: send_email\nhash: ${shortHash(DEMO.chain[1].hash)}\nprev: ${shortHash(DEMO.chain[1].prev_hash)}`,
   },
   {
     title: "Tribunal",
-    desc: "An autonomous multi-agent panel audits the full log against a structured policy pack, EU AI Act, ISO 42001, NIST AI RMF, or SOC 2, citing evidence, article references, and a confidence score for each finding.",
-    artifact: 'finding: EU AI Act Art.15\nconfidence: 0.94\n"Model card missing robustness\ntest results for event #4210"',
+    desc: "An LLM auditor checks the full log against each rule in a policy pack (EU AI Act, ISO 42001, NIST AI RMF, or SOC 2) and cites the events and framework reference behind every finding. Without an API key, a deterministic offline detector runs instead.",
+    artifact: "rule: data_exfiltration\nseverity: critical\nref: Art.12 record-keeping; Art.15 robustness",
   },
   {
     title: "Evidence Pack",
-    desc: "One click exports an auditor-ready report: incident summary, violation table, full action log, and chain-integrity status, formatted for regulators.",
-    artifact: "evidence_pack_2026-08-26.pdf\n42 events · 1 finding\nchain: INTACT · exported",
+    desc: "One click exports a report with the violation table, the full action log, and the chain-integrity status. HTML on every plan, PDF on paid plans.",
+    artifact: `evidence pack · ${DEMO.sessionId}\n${DEMO.events.length} events\nchain: INTACT`,
   },
 ];
 
@@ -220,13 +223,13 @@ export default function LandingBody() {
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <div style={{ fontSize: ".78rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "#6f9db4", marginBottom: ".6rem" }}>Proof</div>
           <h2 style={{ fontSize: "clamp(1.7rem, 3.8vw, 2.3rem)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: "1.2rem", maxWidth: 620, color: BG }}>
-            Every read re-verifies the whole chain, not just the last row.
+            Verification walks the whole chain, not just the last row.
           </h2>
           <p style={{ fontSize: ".98rem", color: "#a8a199", maxWidth: 620, marginBottom: "1.6rem" }}>
-            Each event stores the hash of the one before it. Change a single byte in event #14 and every event after it, up to #4471, fails verification the next time anyone opens the log.
+            Each event stores the hash of the one before it. Change a single byte in any event and verification fails at that event, and nothing after it can be trusted. Run it on a session from the dashboard, or edit an event in the card above and watch it happen.
           </p>
           <div style={{ fontFamily: MONO_STACK, fontSize: ".9rem", color: BG, border: "1px solid #33302b", borderLeft: "3px solid #6f9db4", padding: "1rem 1.2rem", background: "#22201d", fontVariantNumeric: "tabular-nums" }}>
-            verify(chain) &rarr; 4471/4471 events valid &middot; <span style={{ color: "#6f9db4", fontWeight: 700 }}>INTACT</span>
+            verify(chain) &rarr; {DEMO.chain.length}/{DEMO.chain.length} events valid (demo session) &middot; <span style={{ color: "#6f9db4", fontWeight: 700 }}>INTACT</span>
           </div>
         </div>
       </FadeInSection>

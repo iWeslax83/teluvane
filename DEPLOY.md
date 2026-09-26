@@ -70,7 +70,7 @@ All required env vars are documented in `.env.example`. Never commit real secret
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
    | `NEXT_PUBLIC_API_URL` | Your Render URL from step 2 |
 
-3. Click **Deploy**. Note your Vercel URL (e.g. `https://teluvane.vercel.app`).
+3. Click **Deploy**. Note your Vercel URL (for example `https://<your-project>.vercel.app`, or your custom domain).
 
 ---
 
@@ -80,7 +80,7 @@ Once you have the Vercel URL, go back to Render and add/update the env var:
 
 | Key | Value |
 |---|---|
-| `FRONTEND_ORIGIN` | `https://teluvane.vercel.app` (your actual Vercel URL) |
+| `FRONTEND_ORIGIN` | `https://teluvane.com` (your actual frontend URL) |
 
 Trigger a **Manual Deploy** on Render to apply the change. This restricts CORS so only your
 frontend can call the API.

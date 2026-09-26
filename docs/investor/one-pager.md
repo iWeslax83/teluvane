@@ -1,6 +1,8 @@
 # TELUVANE
 Flight recorder + compliance tribunal for AI agents.
 
+> DRAFT: do not send while any [fill in] bracket below is still present.
+
 ## The problem
 Companies are putting AI agents into production workflows (support, ops, coding, finance) with
 no audit trail. When an agent takes a bad action, there is no tamper-proof record of what it did
@@ -28,14 +30,14 @@ after the fact. There is no established default for this yet.
 - Multi-tenant product: Supabase-authenticated orgs, per-org API keys, LemonSqueezy billing.
 - Postgres-backed store with org-scoping enforced at the code level, not by convention
   (`Store._assert_scoped` makes an unscoped query a hard error).
-- 117 automated tests passing (backend + evidence export).
-- Live at [blackbox-agent-accountability.vercel.app](https://blackbox-agent-accountability.vercel.app),
-  API on Render, frontend on Vercel.
+- 202 backend and 90 frontend automated tests, run in CI on every push.
+- Live at [teluvane.com](https://teluvane.com), API on Render, frontend on Vercel.
 - MCP server for zero-code integration with Claude Desktop, Claude Code, or any MCP client.
 
 ## Traction
-_[fill in: number of orgs signed up, sessions recorded, audits run, any paid conversions.
-Pull from the production Supabase instance, not the local dev DB, before sharing this doc.]_
+Early stage. No paying customers and no production usage yet. What exists: the recorder,
+the tribunal, evidence packs, an MCP server, and on-chain anchoring on Avalanche Fuji, all
+covered by CI. We are looking for design partners and for feedback on the detection rules.
 
 ## Business model
 - Pro tier (LemonSqueezy, $19.99/mo): built-in EU AI Act, ISO 42001, NIST AI RMF, and SOC 2
