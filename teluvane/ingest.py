@@ -15,8 +15,13 @@ from slowapi.errors import RateLimitExceeded
 from .appstate import FRAMEWORK_PACKS, limiter, store
 from .logging_config import configure_logging
 from .monitoring import configure_sentry
-from .routes import anchor, billing, evidence, orgs, policy, sessions
-from .scheduler import TICK_INTERVAL_SECONDS, run_anchor_cycle, run_due_schedules
+from .routes import anchor, billing, evidence, orgs, policy, privacy, sessions
+from .scheduler import (
+    TICK_INTERVAL_SECONDS,
+    run_anchor_cycle,
+    run_due_schedules,
+    run_retention_cycle,
+)
 
 configure_logging()
 configure_sentry()
@@ -43,6 +48,10 @@ def _scheduler_loop() -> None:
             run_anchor_cycle()
         except Exception:
             logging.exception("anchor tick failed")
+        try:
+            run_retention_cycle()
+        except Exception:
+            logging.exception("retention tick failed")
 
 
 @asynccontextmanager
@@ -114,3 +123,4 @@ app.include_router(policy.router)
 app.include_router(evidence.router)
 app.include_router(orgs.router)
 app.include_router(billing.router)
+app.include_router(privacy.router)

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import merkleVectors from "./__fixtures__/merkle_vectors.json";
 import chainVectors from "./__fixtures__/chain_vectors.json";
+import chainVectorsV2 from "./__fixtures__/chain_vectors_v2.json";
 import { rootFromProof } from "./merkle";
 import { verifyChain } from "./chainVerify";
 
@@ -28,5 +29,24 @@ describe("chain verify parity with Python", () => {
     const res = await verifyChain(evts);
     expect(res.ok).toBe(false);
     expect(res.failAt).toBe(evts[0].seq);
+  });
+});
+
+describe("chain verify parity for erasable (v2) events", () => {
+  it("verifies a v2 chain, whose canonical strings carry a commitment instead of content", async () => {
+    for (const e of chainVectorsV2.events) {
+      expect(JSON.parse(e.canonical).v).toBe(2);
+      expect(e.canonical).not.toContain("intent");
+    }
+    const res = await verifyChain(chainVectorsV2.events);
+    expect(res.ok).toBe(true);
+    expect(res.head).toBe(chainVectorsV2.events.at(-1)!.hash);
+  });
+  it("flags a v2 event whose commitment was swapped", async () => {
+    const evts = chainVectorsV2.events.map((e: any) => ({ ...e }));
+    evts[1] = { ...evts[1], canonical: evts[1].canonical.replace(/"payload_commitment": "[0-9a-f]{4}/, '"payload_commitment": "0000') };
+    const res = await verifyChain(evts);
+    expect(res.ok).toBe(false);
+    expect(res.failAt).toBe(evts[1].seq);
   });
 });

@@ -3,8 +3,9 @@
 
 import logging
 import os
+from datetime import datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from ..apikeys import org_from_api_key
@@ -24,6 +25,19 @@ router = APIRouter()
 @router.post("/events")
 @limiter.limit(lambda: os.environ.get("EVENTS_RATE_LIMIT", "120/minute"))
 def ingest(request: Request, e: Event, org_id: str = Depends(org_from_api_key)) -> Event:
+    # ts is client supplied and later cast to timestamptz by the stats and retention
+    # queries; one unparseable value would break those for the whole org. Checked here, not
+    # in the Event model, so a legacy row with a bad ts can still be read back. A naive
+    # timestamp (no UTC offset) passes fromisoformat but would never expire under any
+    # retention window, since the retention SQL compares it against timestamptz using a
+    # different, incomparable type; reject it here instead of accepting a ts retention can
+    # never act on.
+    try:
+        dt = datetime.fromisoformat(e.ts)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="ts must be an ISO 8601 timestamp")
+    if dt.tzinfo is None:
+        raise HTTPException(status_code=422, detail="ts must be an ISO 8601 timestamp")
     return store.append(org_id, e)
 
 
@@ -60,7 +74,9 @@ def list_verdicts(
 
 @router.get("/verify")
 def verify(session_id: str | None = None, org_id: str = Depends(current_org)) -> dict:
-    return {"chain_intact": store.verify_chain(org_id, session_id)}
+    if session_id:
+        return store.verify_report(org_id, session_id)
+    return {"chain_intact": store.verify_chain(org_id)}
 
 
 @router.post("/audit/{session_id}")

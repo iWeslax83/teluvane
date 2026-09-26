@@ -1,19 +1,21 @@
 # teluvane/teluvane/store.py
 import hashlib
 import json
+import os
 from typing import Optional
 
 from psycopg.rows import dict_row
 
+from . import commitments
 from .cost import compute_cost
 from .db import get_pool
 from .schema import Event, Verdict
 
 
-def _event_canonical(prev_hash: str, e: Event) -> str:
-    # The exact string the hash chain digests. org_id is included so an event is
+def _event_canonical_v1(prev_hash: str, e: Event) -> str:
+    # The exact string the v1 hash chain digests. org_id is included so an event is
     # cryptographically bound to its tenant. Output bytes are frozen: changing
-    # this invalidates every stored chain.
+    # this invalidates every stored v1 chain.
     return json.dumps(
         {
             "prev": prev_hash,
@@ -33,8 +35,40 @@ def _event_canonical(prev_hash: str, e: Event) -> str:
     )
 
 
+def _event_canonical_v2(prev_hash: str, e: Event) -> str:
+    # v2 digests a salted commitment to the personal content instead of the content itself,
+    # so the content can be erased later without breaking any hash. Frozen like v1.
+    return json.dumps(
+        {
+            "v": 2,
+            "prev": prev_hash,
+            "org_id": e.org_id,
+            "agent_id": e.agent_id,
+            "session_id": e.session_id,
+            "kind": e.kind,
+            "tool": e.tool,
+            "ts": e.ts,
+            "payload_commitment": e.payload_commitment,
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+
+
+def _event_canonical(prev_hash: str, e: Event) -> str:
+    return (_event_canonical_v2 if e.hash_version == 2 else _event_canonical_v1)(prev_hash, e)
+
+
 def _event_digest(prev_hash: str, e: Event) -> str:
     return hashlib.sha256(_event_canonical(prev_hash, e).encode("utf-8")).hexdigest()
+
+
+def _write_version() -> int:
+    """Hash version for new events. TELUVANE_EVENT_HASH_VERSION=1 is the rollback switch."""
+    return 1 if os.environ.get("TELUVANE_EVENT_HASH_VERSION") == "1" else 2
+
+
+REDACTED_RATIONALE = "[redacted: the source data for this finding was erased]"
 
 
 class Store:
@@ -60,16 +94,35 @@ class Store:
         sql_ins = (
             "INSERT INTO events"
             "(org_id,agent_id,session_id,kind,intent,tool,args,output,approved_by,ts,"
-            "prev_hash,hash,model,input_tokens,output_tokens,cost_usd)"
-            " VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING seq"
+            "prev_hash,hash,model,input_tokens,output_tokens,cost_usd,hash_version,"
+            "payload_commitment)"
+            " VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING seq"
         )
+        sql_payload = "INSERT INTO event_payloads(seq,org_id,salt,payload) VALUES(%s,%s,%s,%s)"
         self._assert_scoped(org_id, sql_last)
         self._assert_scoped(org_id, sql_ins)
+        self._assert_scoped(org_id, sql_payload)
         e.org_id = org_id
         # cost_usd isn't part of the hash chain (see _event_digest), so it's safe to fill it
         # in here from a known model's pricing when the caller supplied tokens but no cost.
         if e.cost_usd is None:
             e.cost_usd = compute_cost(e.model, e.input_tokens, e.output_tokens)
+        e.hash_version = _write_version()
+        salt = payload = None
+        if e.hash_version == 2:
+            salt = commitments.new_salt()
+            payload = commitments.canonical_payload(commitments.payload_of(e))
+            e.payload_commitment = commitments.commit(salt, payload)
+        # v2 keeps the personal content only in event_payloads; the events row carries blanks.
+        if e.hash_version == 2:
+            row_intent, row_args, row_output, row_approved = "", {}, "", None
+        else:
+            row_intent, row_args, row_output, row_approved = (
+                e.intent,
+                e.args,
+                e.output,
+                e.approved_by,
+            )
         with self.pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 # Serialize appends to the same (org, session) for the life of this
@@ -94,11 +147,11 @@ class Store:
                         e.agent_id,
                         e.session_id,
                         e.kind,
-                        e.intent,
+                        row_intent,
                         e.tool,
-                        json.dumps(e.args, ensure_ascii=False),
-                        e.output,
-                        e.approved_by,
+                        json.dumps(row_args, ensure_ascii=False),
+                        row_output,
+                        row_approved,
                         e.ts,
                         e.prev_hash,
                         e.hash,
@@ -106,9 +159,13 @@ class Store:
                         e.input_tokens,
                         e.output_tokens,
                         e.cost_usd,
+                        e.hash_version,
+                        e.payload_commitment,
                     ),
                 )
                 e.seq = cur.fetchone()["seq"]
+                if e.hash_version == 2:
+                    cur.execute(sql_payload, (e.seq, org_id, salt, payload))
             conn.commit()
         return e
 
@@ -140,18 +197,38 @@ class Store:
             conn.commit()
 
     # ---- reads ------------------------------------------------------------------------------
-    def events(self, org_id: str, session_id: Optional[str] = None) -> list[Event]:
-        sql = "SELECT * FROM events WHERE org_id=%s"
+    def _events_with_salt(
+        self, org_id: str, session_id: Optional[str] = None
+    ) -> list[tuple[Event, Optional[str]]]:
+        """Events in seq order, v2 payloads hydrated from event_payloads. The salt is returned
+        beside the event (None for v1 or erased events) for commitment checks."""
+        sql = (
+            "SELECT e.*, p.payload AS _payload, p.salt AS _salt FROM events e "
+            "LEFT JOIN event_payloads p ON p.seq = e.seq AND p.org_id = e.org_id "
+            "WHERE e.org_id=%s"
+        )
         params: tuple = (org_id,)
         if session_id:
-            sql += " AND session_id=%s"
+            sql += " AND e.session_id=%s"
             params += (session_id,)
-        sql += " ORDER BY seq ASC"
+        sql += " ORDER BY e.seq ASC"
         self._assert_scoped(org_id, sql)
         with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
             cur.execute(sql, params)
             rows = cur.fetchall()
-        return [Event(**r) for r in rows]
+        out: list[tuple[Event, Optional[str]]] = []
+        for r in rows:
+            payload, salt = r.pop("_payload"), r.pop("_salt")
+            if r["hash_version"] == 2:
+                if payload is None:
+                    r["erased"] = True
+                else:
+                    r.update(json.loads(payload))
+            out.append((Event(**r), salt))
+        return out
+
+    def events(self, org_id: str, session_id: Optional[str] = None) -> list[Event]:
+        return [e for e, _ in self._events_with_salt(org_id, session_id)]
 
     def verdicts(self, org_id: str, session_id: Optional[str] = None) -> list[Verdict]:
         sql = "SELECT * FROM verdicts WHERE org_id=%s"
@@ -171,12 +248,108 @@ class Store:
         return out
 
     def verify_chain(self, org_id: str, session_id: Optional[str] = None) -> bool:
-        prev = "GENESIS"
-        for e in self.events(org_id, session_id):
+        """Every event's hash must match its canonical form and link to the previous event in
+        its own session. For v2 events whose payload still exists, the payload must also match
+        its commitment; without that check editing event_payloads would go unnoticed."""
+        prev_by_session: dict[str, str] = {}
+        for e, salt in self._events_with_salt(org_id, session_id):
+            prev = prev_by_session.get(e.session_id, "GENESIS")
             if _event_digest(prev, e) != e.hash:
                 return False
-            prev = e.hash
+            if e.hash_version == 2 and salt is not None:
+                canonical = commitments.canonical_payload(commitments.payload_of(e))
+                if commitments.commit(salt, canonical) != e.payload_commitment:
+                    return False
+            prev_by_session[e.session_id] = e.hash
         return True
+
+    def payload_openings(self, org_id: str, session_id: str) -> list[dict]:
+        """Salt and canonical payload for every v2 event whose payload still exists, so an
+        auditor can recompute each commitment: sha256(bytes.fromhex(salt) + payload_utf8)."""
+        sql = (
+            "SELECT p.seq, p.salt, p.payload FROM event_payloads p "
+            "JOIN events e ON e.seq = p.seq "
+            "WHERE p.org_id=%s AND e.session_id=%s ORDER BY p.seq"
+        )
+        self._assert_scoped(org_id, sql)
+        with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(sql, (org_id, session_id))
+            return [dict(r) for r in cur.fetchall()]
+
+    def verify_report(self, org_id: str, session_id: str) -> dict:
+        """verify_chain plus erasure accounting. `unexplained_erasures` counts v2 events whose
+        payload is missing but that no erasure_log entry covers: either a deletion that did not
+        go through erase_payloads, or tampering. The log is not itself tamper-evident yet."""
+        events = self.events(org_id, session_id)
+        erased = {e.seq for e in events if e.erased}
+        sql = "SELECT seqs FROM erasure_log WHERE org_id=%s AND session_id=%s"
+        self._assert_scoped(org_id, sql)
+        with self.pool.connection() as conn, conn.cursor() as cur:
+            cur.execute(sql, (org_id, session_id))
+            logged = {int(q) for (seqs,) in cur.fetchall() for q in seqs}
+        return {
+            "chain_intact": self.verify_chain(org_id, session_id),
+            "erased_events": len(erased),
+            "unexplained_erasures": len(erased - logged),
+        }
+
+    def erase_payloads(
+        self,
+        org_id: str,
+        session_id: str,
+        requested_by: str,
+        reason: str = "",
+        seqs: Optional[list[int]] = None,
+    ) -> dict:
+        """Erase the personal content of v2 events in a session (all of them, or just `seqs`).
+        Chain hashes and anchors stay valid. Also redacts the session's verdict rationales,
+        which quote the log. v1 events cannot be erased: their plaintext is inside the hash."""
+        sql_scope = (
+            "SELECT e.seq, e.hash_version, (p.seq IS NOT NULL) AS has_payload FROM events e "
+            "LEFT JOIN event_payloads p ON p.seq = e.seq AND p.org_id = e.org_id "
+            "WHERE e.org_id=%s AND e.session_id=%s"
+        )
+        params: tuple = (org_id, session_id)
+        if seqs is not None:
+            sql_scope += " AND e.seq = ANY(%s)"
+            params += (seqs,)
+        sql_del = "DELETE FROM event_payloads WHERE org_id=%s AND seq = ANY(%s)"
+        sql_log = (
+            "INSERT INTO erasure_log(org_id,session_id,seqs,requested_by,reason) "
+            "VALUES(%s,%s,%s,%s,%s)"
+        )
+        sql_redact = "UPDATE verdicts SET rationale=%s WHERE org_id=%s AND session_id=%s"
+        for q in (sql_scope, sql_del, sql_log, sql_redact):
+            self._assert_scoped(org_id, q)
+        with self.pool.connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                # Same advisory lock, same key, as audited_run (auditlock.py). Held for the
+                # whole erasure and released on commit below, exactly like audited_run holds
+                # it for the whole audit. Without this, an audit that has already read this
+                # session's events but not yet written its verdicts can race an erasure: the
+                # erasure's verdict-redaction UPDATE finds nothing to redact, and the audit's
+                # verdicts land afterward possibly quoting content that was just erased.
+                cur.execute(
+                    "SELECT pg_advisory_xact_lock(hashtext(%s))", (f"{org_id}:{session_id}",)
+                )
+                cur.execute(sql_scope, params)
+                scope = cur.fetchall()
+                erasable = [r["seq"] for r in scope if r["hash_version"] == 2 and r["has_payload"]]
+                result = {
+                    "erased": len(erasable),
+                    "already_erased": sum(
+                        1 for r in scope if r["hash_version"] == 2 and not r["has_payload"]
+                    ),
+                    "legacy_unerasable": sum(1 for r in scope if r["hash_version"] != 2),
+                }
+                if erasable:
+                    cur.execute(sql_del, (org_id, erasable))
+                    cur.execute(
+                        sql_log, (org_id, session_id, json.dumps(erasable), requested_by, reason)
+                    )
+                    cur.execute(sql_redact, (REDACTED_RATIONALE, org_id, session_id))
+            conn.commit()
+        return result
 
     def canonical_events(self, org_id: str, session_id: str) -> list[dict]:
         """Per-event digest inputs for independent (browser) verification. The
