@@ -122,7 +122,7 @@ export default function LandingBody() {
             <p style={{ fontSize: "1.1rem", color: MUTED, lineHeight: 1.55, marginBottom: "2rem", maxWidth: 520 }}>
               Tamper one row and the chain breaks visibly. An autonomous tribunal audits the log and exports a regulator-ready evidence pack.
             </p>
-            <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+            <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
               <a href="/login" className="landing-btn landing-btn-primary" style={{
                 display: "inline-flex", alignItems: "center", padding: ".75rem 1.6rem",
                 borderRadius: 8, fontSize: ".95rem", fontWeight: 700, textDecoration: "none",
@@ -135,14 +135,6 @@ export default function LandingBody() {
               }}>
                 View on GitHub
               </a>
-            </div>
-            <div style={{ fontSize: ".82rem", color: MUTED, display: "flex", alignItems: "center", gap: ".5rem" }}>
-              <span>Built with</span>
-              <span>LangGraph</span>
-              <span style={{ width: 3, height: 3, borderRadius: "50%", background: BORDER, display: "inline-block" }}></span>
-              <span>Claude</span>
-              <span style={{ width: 3, height: 3, borderRadius: "50%", background: BORDER, display: "inline-block" }}></span>
-              <span>FastAPI</span>
             </div>
           </div>
           <div style={{ flex: "1 1 380px", minWidth: 0, display: "flex", justifyContent: "center" }}>
