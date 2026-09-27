@@ -21,6 +21,7 @@ export interface DemoSession {
   events: DemoEventFields[];
   tamper: { eventIndex: number; intent: string; args: Record<string, unknown> }[];
   chain: ChainEvent[];
+  findings: { ruleId: string; severity: string; confidence: number; evidenceSeqs: number[]; frameworkRef: string }[];
 }
 
 export const DEMO = raw as unknown as DemoSession;

@@ -89,13 +89,13 @@ const steps = [
   },
   {
     title: "Tribunal",
-    desc: "An LLM auditor checks the full log against each rule in a policy pack (EU AI Act, ISO 42001, NIST AI RMF, or SOC 2) and cites the events and framework reference behind every finding. Without an API key, a deterministic offline detector runs instead.",
-    artifact: "rule: data_exfiltration\nseverity: critical\nref: Art.12 record-keeping; Art.15 robustness",
+    desc: "Three independent reviewers (a strict auditor, a skeptic, and a literalist) each judge every rule in a policy pack (EU AI Act, ISO 42001, NIST AI RMF, or SOC 2). A finding needs a majority and cites the events and framework reference behind it. Without an API key, deterministic offline detectors run instead.",
+    artifact: `demo session · offline detector\nrule: ${DEMO.findings[0].ruleId} (${DEMO.findings[0].severity})\nevidence: event #${DEMO.findings[0].evidenceSeqs.join(", #")}\nconfidence: ${DEMO.findings[0].confidence.toFixed(2)}\nref: ${DEMO.findings[0].frameworkRef}`,
   },
   {
     title: "Evidence Pack",
     desc: "One click exports a report with the violation table, the full action log, and the chain-integrity status. HTML on every plan, PDF on paid plans.",
-    artifact: `evidence pack · ${DEMO.sessionId}\n${DEMO.events.length} events\nchain: INTACT`,
+    artifact: `evidence pack · ${DEMO.sessionId}\n${DEMO.events.length} events · ${DEMO.findings.length} findings\nchain: INTACT`,
   },
 ];
 

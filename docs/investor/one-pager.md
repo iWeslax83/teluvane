@@ -15,8 +15,8 @@ edit or delete them after the fact.
    (SHA-256) per session. Editing or deleting a row breaks the chain visibly, so tampering is
    detectable, not just logged.
 2. **Audits** the session against a policy pack (EU AI Act ships by default, custom rules on
-   paid plans) and produces cited verdicts, either from a deterministic offline detector or a
-   live LangGraph + Claude tribunal.
+   paid plans) and produces cited verdicts, either from deterministic offline detectors or a
+   live LangGraph + Claude tribunal (three reviewers per rule, majority decides).
 3. **Exports evidence**: a self-contained report (HTML on every plan, PDF on Pro) with the full
    event log, verdict table, chain-integrity status, and framework citations, something you can
    hand to a regulator, auditor, or customer's security team.

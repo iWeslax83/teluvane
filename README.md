@@ -16,7 +16,7 @@ TELUVANE is a tamper-evident flight recorder and compliance tribunal for AI agen
 call, tool invocation, and tool result gets recorded and SHA-256 hash-chained per session: tamper
 any stored row and the chain breaks visibly. A tribunal then audits the session log against a
 policy pack (the EU AI Act pack ships by default, plus your own custom rules on paid plans) and
-produces cited verdicts, either with a deterministic offline keyword detector or a live
+produces cited verdicts, either with deterministic offline detectors or a live
 LangGraph + Claude tribunal if you supply an Anthropic key.
 
 It's a real multi-tenant product, not a demo: Supabase-authenticated orgs, API keys for machine
@@ -29,7 +29,7 @@ ingestion, LemonSqueezy billing, and a Postgres-backed store, not a single-user 
 | Piece | What it does |
 |---|---|
 | **Recorder** | Agents POST events (`llm_call`, `tool_call`, `tool_result`) to the API using an org's API key. Each event is SHA-256 hash-chained to the previous one within its session. |
-| **Tribunal** | Runs against the merged policy pack (built-in EU AI Act rules plus any custom rules an org has added). Without an Anthropic key it uses a deterministic keyword detector; with one, a LangGraph fan-out of Claude "lens" checks feeds a consensus judge. |
+| **Tribunal** | Runs against the merged policy pack (built-in EU AI Act rules plus any custom rules an org has added). Without an Anthropic key it runs structural detectors (tool name, approval field, checksum-validated personal data such as card, IBAN and national id numbers) and falls back to word-start keyword matching for rules that have no detector, including custom rules. With a key, three Claude lenses (auditor, skeptic, literalist) each judge every rule and a finding needs a majority. Set `TRIBUNAL_LENS_COUNT=1` to run one lens at a third of the cost. |
 | **Automated runs** | Pro orgs can put the tribunal on a timer instead of clicking "Run audit" (see Settings in the dashboard). |
 | **Evidence pack** | Exports a self-contained report (HTML on every plan, PDF export on Pro) with the full event log, verdict table, chain-integrity status, and framework citations. |
 
@@ -132,6 +132,13 @@ tracking in `GET /stats/usage` (per-day tokens and USD, computed from a built-in
 table for known models; unknown models are recorded with no computed cost).
 
 ---
+
+## Detection evals
+
+`evals/` holds hand-written labeled sessions and a runner that scores each detector per rule
+(`python -m evals.run_eval --detector offline`). The sessions and the detectors share authors,
+so read `evals/README.md` before quoting a score, and send scenarios that prove us wrong
+(`evals/CONTRIBUTING.md`).
 
 ## Tests
 

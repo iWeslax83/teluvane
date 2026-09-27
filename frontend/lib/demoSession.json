@@ -60,6 +60,29 @@
       "intent": "send status email to allowlisted address"
     }
   ],
+  "findings": [
+    {
+      "ruleId": "data_exfiltration",
+      "severity": "critical",
+      "confidence": 0.9,
+      "evidenceSeqs": [3],
+      "frameworkRef": "Art.12 record-keeping; Art.15 robustness"
+    },
+    {
+      "ruleId": "pii_mishandling",
+      "severity": "high",
+      "confidence": 0.85,
+      "evidenceSeqs": [3],
+      "frameworkRef": "Art.10 data governance; GDPR Art.5"
+    },
+    {
+      "ruleId": "instruction_override",
+      "severity": "critical",
+      "confidence": 0.85,
+      "evidenceSeqs": [3],
+      "frameworkRef": "Art.15 robustness against manipulation"
+    }
+  ],
   "chain": [
     {
       "seq": 1,
