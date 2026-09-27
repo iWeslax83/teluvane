@@ -14,10 +14,13 @@ from .byok import get_byok
 from .custom_rules import effective_pack
 from .db import get_pool
 from .orgs import get_policy_framework
+from .retention import run_retention
 
 TICK_INTERVAL_SECONDS = 60
 
 _last_anchor_run = None
+_last_retention_run = None
+RETENTION_INTERVAL_MINUTES = 60
 
 
 def _anchor_due(interval_minutes: int) -> bool:
@@ -43,6 +46,19 @@ def run_anchor_cycle() -> None:
     anchor.reconcile_pending(pool, cfg)
     if _anchor_due(cfg.batch_interval_minutes):
         anchor.run_anchor_pass(pool, cfg)
+
+
+def run_retention_cycle() -> int:
+    """Erase expired event payloads, at most once per RETENTION_INTERVAL_MINUTES per process."""
+    global _last_retention_run
+    now = datetime.now(timezone.utc)
+    if (
+        _last_retention_run is not None
+        and (now - _last_retention_run).total_seconds() < RETENTION_INTERVAL_MINUTES * 60
+    ):
+        return 0
+    _last_retention_run = now
+    return run_retention(get_pool())
 
 
 def get_schedule(org_id: str) -> dict:
