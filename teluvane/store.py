@@ -68,6 +68,9 @@ def _write_version() -> int:
     return 1 if os.environ.get("TELUVANE_EVENT_HASH_VERSION") == "1" else 2
 
 
+REDACTED_RATIONALE = "[redacted: the source data for this finding was erased]"
+
+
 class Store:
     """Tenant-scoped Postgres store. EVERY public method takes org_id as its first argument;
     the _assert_scoped guard makes an un-scoped query impossible by construction."""
@@ -272,6 +275,72 @@ class Store:
         with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cur:
             cur.execute(sql, (org_id, session_id))
             return [dict(r) for r in cur.fetchall()]
+
+    def verify_report(self, org_id: str, session_id: str) -> dict:
+        """verify_chain plus erasure accounting. `unexplained_erasures` counts v2 events whose
+        payload is missing but that no erasure_log entry covers: either a deletion that did not
+        go through erase_payloads, or tampering. The log is not itself tamper-evident yet."""
+        events = self.events(org_id, session_id)
+        erased = {e.seq for e in events if e.erased}
+        sql = "SELECT seqs FROM erasure_log WHERE org_id=%s AND session_id=%s"
+        self._assert_scoped(org_id, sql)
+        with self.pool.connection() as conn, conn.cursor() as cur:
+            cur.execute(sql, (org_id, session_id))
+            logged = {int(q) for (seqs,) in cur.fetchall() for q in seqs}
+        return {
+            "chain_intact": self.verify_chain(org_id, session_id),
+            "erased_events": len(erased),
+            "unexplained_erasures": len(erased - logged),
+        }
+
+    def erase_payloads(
+        self,
+        org_id: str,
+        session_id: str,
+        requested_by: str,
+        reason: str = "",
+        seqs: Optional[list[int]] = None,
+    ) -> dict:
+        """Erase the personal content of v2 events in a session (all of them, or just `seqs`).
+        Chain hashes and anchors stay valid. Also redacts the session's verdict rationales,
+        which quote the log. v1 events cannot be erased: their plaintext is inside the hash."""
+        sql_scope = (
+            "SELECT e.seq, e.hash_version, (p.seq IS NOT NULL) AS has_payload FROM events e "
+            "LEFT JOIN event_payloads p ON p.seq = e.seq AND p.org_id = e.org_id "
+            "WHERE e.org_id=%s AND e.session_id=%s"
+        )
+        params: tuple = (org_id, session_id)
+        if seqs is not None:
+            sql_scope += " AND e.seq = ANY(%s)"
+            params += (seqs,)
+        sql_del = "DELETE FROM event_payloads WHERE org_id=%s AND seq = ANY(%s)"
+        sql_log = (
+            "INSERT INTO erasure_log(org_id,session_id,seqs,requested_by,reason) "
+            "VALUES(%s,%s,%s,%s,%s)"
+        )
+        sql_redact = "UPDATE verdicts SET rationale=%s WHERE org_id=%s AND session_id=%s"
+        for q in (sql_scope, sql_del, sql_log, sql_redact):
+            self._assert_scoped(org_id, q)
+        with self.pool.connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(sql_scope, params)
+                scope = cur.fetchall()
+                erasable = [r["seq"] for r in scope if r["hash_version"] == 2 and r["has_payload"]]
+                result = {
+                    "erased": len(erasable),
+                    "already_erased": sum(
+                        1 for r in scope if r["hash_version"] == 2 and not r["has_payload"]
+                    ),
+                    "legacy_unerasable": sum(1 for r in scope if r["hash_version"] != 2),
+                }
+                if erasable:
+                    cur.execute(sql_del, (org_id, erasable))
+                    cur.execute(
+                        sql_log, (org_id, session_id, json.dumps(erasable), requested_by, reason)
+                    )
+                    cur.execute(sql_redact, (REDACTED_RATIONALE, org_id, session_id))
+            conn.commit()
+        return result
 
     def canonical_events(self, org_id: str, session_id: str) -> list[dict]:
         """Per-event digest inputs for independent (browser) verification. The
