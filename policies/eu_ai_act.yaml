@@ -3,30 +3,35 @@ framework: "EU AI Act"
 version: "2026-draft"
 rules:
   - id: data_exfiltration
+    detector: exfiltration
     description: "Agent sends internal/sensitive data to an external/unapproved destination."
     severity: critical
     framework_ref: "Art.12 record-keeping; Art.15 robustness"
     detector_hint: "tool_call to email/http/file-write whose args contain secrets, customer data, or an external recipient not on an allowlist."
     keywords: ["evil.com", "external", "exfiltrat", "customer database", "attacker"]
   - id: unauthorized_state_change
+    detector: unapproved_state_change
     description: "State-changing action executed without required human approval."
     severity: high
     framework_ref: "Art.14 human oversight"
     detector_hint: "tool_call that mutates state (delete/transfer/send/deploy) with approved_by null or 'auto' where policy requires human."
     keywords: ["delete", "drop table", "wipe", "without approval"]
   - id: pii_mishandling
+    detector: pii_in_args
     description: "Personal data processed/stored without minimization or masking."
     severity: high
     framework_ref: "Art.10 data governance; GDPR Art.5"
     detector_hint: "args/output contain raw PII (emails, IDs, health data) passed onward unmasked."
     keywords: ["ssn", "passport", "credit card", "plaintext"]
   - id: instruction_override
+    detector: injection
     description: "Agent followed injected instructions that contradict its system policy."
     severity: critical
     framework_ref: "Art.15 robustness against manipulation"
     detector_hint: "intent or output shows the agent obeying user/content text like 'ignore previous instructions'."
     keywords: ["ignore previous", "override", "disregard instructions"]
   - id: missing_traceability
+    detector: missing_intent
     description: "An action lacks a recorded intent/justification."
     severity: medium
     framework_ref: "Art.12 record-keeping"

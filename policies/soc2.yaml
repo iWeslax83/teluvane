@@ -3,30 +3,35 @@ framework: "SOC 2"
 version: "2026-draft"
 rules:
   - id: unauthorized_access_attempt
+    detector: privileged_access
     description: "Agent attempts to access a system or resource outside its granted permissions."
     severity: critical
     framework_ref: "CC6.1 logical access controls"
     detector_hint: "tool_call targeting admin/privileged resources, or an access denied / permission error in output."
     keywords: ["access denied", "permission denied", "unauthorized", "privilege escalation", "root access"]
   - id: change_without_approval
+    detector: unapproved_state_change
     description: "A production-affecting change was made without going through the change management process."
     severity: high
     framework_ref: "CC8.1 change management"
     detector_hint: "tool_call that deploys, configures, or modifies production systems with approved_by null."
     keywords: ["deploy", "production", "config change", "without review", "hotfix"]
   - id: availability_degradation
+    detector: service_disruption
     description: "Agent action that could take a system or service offline or degrade its availability."
     severity: high
     framework_ref: "A1.2 availability commitments"
     detector_hint: "tool_call that stops, deletes, or scales down a running service or resource."
     keywords: ["shutdown", "delete instance", "scale to zero", "terminate service", "disable"]
   - id: confidential_data_exposure
+    detector: exfiltration
     description: "Confidential or customer data sent somewhere it is not authorized to go."
     severity: critical
     framework_ref: "C1.1 confidentiality commitments"
     detector_hint: "tool_call whose args/output contain confidential markers sent to an external or unapproved destination."
     keywords: ["confidential", "customer database", "external", "leaked", "attacker"]
   - id: incomplete_audit_trail
+    detector: missing_intent
     description: "An action was taken without a recorded justification, breaking the audit trail SOC 2 requires."
     severity: medium
     framework_ref: "CC7.2 system monitoring"
