@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Parallel sessions:** other Claude sessions may be working on this repo at the same time. Read "Working with more than one Claude session at once" in `2026-09-27-credibility-and-privacy-ROADMAP.md` first, work only in your lane's paths, and use your own worktree, virtualenv and test database.
+
 **Goal:** Make the tribunal's claims true and measurable: structural offline detectors instead of whole-log keyword matching, a real multi-lens panel with a majority judge, and an evaluation harness that scores both against labeled sessions.
 
 **Architecture:** A validated PII module (`pii.py`) and a set of structural detectors (`detectors.py`) that a policy rule opts into with `detector: <name>`. `tribunal.py` runs those offline, and with an API key runs N lens prompts per rule (different stances) whose votes `consolidate()` decides by majority. `evals/` holds hand-written labeled sessions and a runner that reports per-rule precision and recall for the legacy baseline, the new offline detectors, and the live tribunal.

@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Parallel sessions:** other Claude sessions may be working on this repo at the same time. Read "Working with more than one Claude session at once" in `2026-09-27-credibility-and-privacy-ROADMAP.md` first, work only in your lane's paths, and use your own worktree, virtualenv and test database.
+
 **Goal:** Let an organization erase the personal content of recorded events, on request or by a retention window, while every hash in the chain and every on-chain anchor keeps verifying.
 
 **Architecture:** New events (hash version 2) put a salted commitment to `intent`, `args`, `output` and `approved_by` into the hash chain instead of the content. The content and its salt live in `event_payloads`; erasure deletes that row. Verification also re-checks each commitment while its payload exists, so tamper evidence does not weaken. An erasure log plus an `unexplained_erasures` counter make silent deletion visible. Old events (version 1) keep the frozen format and are reported as not erasable.

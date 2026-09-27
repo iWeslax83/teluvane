@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Parallel sessions:** other Claude sessions may be working on this repo at the same time. Read "Working with more than one Claude session at once" in `2026-09-27-credibility-and-privacy-ROADMAP.md` first, work only in your lane's paths, and use your own worktree, virtualenv and test database.
+
 **Goal:** Make everything the landing page and docs say about TELUVANE true and provable: fix the MCP config that cannot work, replace invented numbers with a real, verifiable demo chain, correct overstated claims, and clean up stale docs and repo clutter.
 
 **Architecture:** One JSON file (`frontend/lib/demoSession.json`) is the single source of truth for the demo session shown on the landing page: its events, a chain of real SHA-256 hashes built by a script, and later the findings the offline tribunal returns. The hero card runs the same `verifyChain` the `/verify` page uses, in the browser, on the edited data. Everything else in this plan is copy and doc corrections plus a repo cleanup.

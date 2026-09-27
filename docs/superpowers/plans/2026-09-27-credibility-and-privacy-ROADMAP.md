@@ -12,7 +12,7 @@ Bu belge, projeyi topluluga (team1) sunmadan once yapilacak isleri uc plana bole
 2. **Plan 2, guven ve dogruluk:** kelime aramaya dayali offline dedektor yerine yapisal dedektorler, gercek cok-lensli (cogunluk oylu) tribunal, ve etiketli oturumlarla olcum (evals) eklenir.
 3. **Plan 3, GDPR ve degistirilemez log:** olay icerigi zincire dogrudan degil, tuzlu bir taahhut (commitment) olarak girer. Boylece icerik silinebilir, zincir ve zincir ustu (Avalanche) kayitlar bozulmaz. Silme, saklama suresi ve yasal tutma (legal hold) eklenir.
 
-Sirayla ilerleyin: 1, 2, 3. Baska bilgisayarda kurulum icin asagidaki "Setup on the other computer" bolumunu izleyin. Gercek traction sayisi olmadigi icin hicbir yerde kullanici veya musteri sayisi yazilmaz. Karar bekleyen sorular "Decisions needed" bolumunde.
+Sirayla ilerleyin: 1, 2, 3. Ayni anda birden fazla Claude oturumu calisacaksa "Working with more than one Claude session at once" bolumundeki seritlere (lane A, B, C), ayri worktree, ayri venv ve ayri test veritabani kurallarina uyun. Baska bilgisayarda kurulum icin asagidaki "Setup on the other computer" bolumunu izleyin. Gercek traction sayisi olmadigi icin hicbir yerde kullanici veya musteri sayisi yazilmaz. Karar bekleyen sorular "Decisions needed" bolumunde.
 
 ## What this is for
 
@@ -52,11 +52,69 @@ Design for Plan 3: `docs/superpowers/specs/2026-09-27-erasable-event-log-design.
 
 Order: Plan 1, then Plan 2, then Plan 3, each as its own pull request into `master` with CI green. Plan 3 Task 8 (deploy) has an order of its own: migrate production, then deploy.
 
+## Working with more than one Claude session at once
+
+Status when this section was written: the plans are on `master` (commit `e583761`), and Plan 1 is implemented in pull request #17 (`plan1/honest-landing`), waiting for review. Plans 2 and 3 have not been started. Check `gh pr list` and `git branch -r` before you begin, because this changes fast. Two or more sessions can now work in parallel. They must not share a working tree, a virtualenv or a test database, and they must stay in their own lane.
+
+### Lanes
+
+| Lane | Work | Branch | Owns these paths (no other lane edits them) |
+|---|---|---|---|
+| A: landing and docs sync | Plan 1 (done, PR #17). Then Plan 2 Task 5 and Plan 3 Task 7, once their prerequisites are merged. | `plan1/honest-landing`, then `plan2/landing-sync`, then `plan3/docs` | `frontend/components/landing/`, `frontend/lib/demoSession*`, `frontend/public/llms.txt`, `README.md`, `DEPLOY.md`, `.env.example`, `.gitignore`, `docs/investor/`, `docs/grants/`, `docs/claims-sources.md`, `docs/gdpr-and-immutable-logs.md`, `scripts/erasure_demo.py`, `tests/test_env_example.py`, `tests/test_demo_session.py` |
+| B: Plan 2 backend | Plan 2 Tasks 1 to 4 (Task 6 only with the maintainer's approval). Not Task 5. | `plan2/detector-trust` | `teluvane/pii.py`, `teluvane/detectors.py`, `teluvane/tribunal.py`, `teluvane/policy.py`, `policies/`, `evals/`, `tests/test_pii.py`, `tests/test_detectors.py`, `tests/test_offline_audit.py`, `tests/test_tribunal_lenses.py`, `tests/test_tribunal.py`, `tests/test_evals.py` |
+| C: Plan 3 backend | Plan 3 Tasks 1 to 4 and 6 first. Task 5 only after lane B is merged. Task 8 is run by the maintainer. Not Task 7. | `plan3/erasable-log` (split into two pull requests: 3a is Tasks 1 to 4 and 6, 3b is Task 5 after Plan 2 merges) | `migrations/`, `teluvane/commitments.py`, `teluvane/schema.py`, `teluvane/store.py`, `teluvane/retention.py`, `teluvane/scheduler.py`, `teluvane/ingest.py`, `teluvane/evidence.py`, `teluvane/routes/`, `tests/conftest.py`, the new Plan 3 test files, `tests/test_store_canonical.py`, `tests/fixtures/`, `frontend/lib/anchorVectors.test.ts`, `frontend/scripts/sync-vectors.mjs`, `frontend/lib/__fixtures__/` |
+
+One session can hold more than one lane in sequence, but never two at the same time. If two sessions start, the natural split is: one takes lane B, the other takes lane C, and whichever finishes first takes lane A's remaining work.
+
+The only file both B and C ever touch is `teluvane/tribunal.py` (Plan 3 Task 5 changes `_events_to_text`). That is why Task 5 waits for Plan 2 to merge. If a lane needs a file that another lane owns, stop and tell the maintainer instead of editing it. Sessions cannot reliably message each other; coordinate through pull requests and the maintainer.
+
+### Order and hand-offs
+
+1. Now, in parallel: lane B starts Plan 2, lane C starts Plan 3 (3a). Plan 1 is already out for review.
+2. Lane A's remaining work waits: Plan 2 Task 5 needs pull request #17 and Plan 2 (Tasks 1 to 4) merged; Plan 3 Task 7 needs Plan 3 Tasks 1 to 5 merged (it runs `scripts/erasure_demo.py` against a database).
+3. Merge order into `master`: #17 any time; Plan 2 backend; Plan 3a; Plan 3b; then lane A's two follow-ups. After any merge, every other lane runs `git fetch origin && git rebase origin/master` before it opens or updates its pull request.
+4. Production: only the maintainer runs Plan 3 Task 8 (migrate production, then deploy).
+
+### Isolation rules
+
+Concurrent sessions in one checkout will overwrite each other's edits. Follow all of these.
+
+- **One git worktree per session.** From the main checkout:
+
+```bash
+git fetch origin
+git worktree add ../teluvane-lane-b -b plan2/detector-trust origin/master
+cd ../teluvane-lane-b
+```
+
+- **One virtualenv per worktree.** An editable install points at a single directory, so the main checkout's `.venv` would import the wrong copy of `teluvane`. Create a new one and check it:
+
+```bash
+python3.11 -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
+python -c "import teluvane; print(teluvane.__file__)"   # must print a path inside THIS worktree
+(cd frontend && npm ci)
+```
+
+- **One test database per session.** `tests/conftest.py` truncates tables, so two sessions on one database corrupt each other's runs. One Postgres container can serve both:
+
+```bash
+docker exec teluvane-db psql -U postgres -c "CREATE DATABASE teluvane_test_b"   # lane C uses teluvane_test_c, lane A teluvane_test_a
+export TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/teluvane_test_b
+export DATABASE_URL=$TEST_DATABASE_URL SUPABASE_JWT_SECRET=test-secret
+export TELUVANE_SECRET_KEY=$(python -c "from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())")
+```
+
+- **Different dev-server ports** when running `next dev` or `next start` (for example 3117 for lane A, 3127 for lane B, 3137 for lane C).
+- **Stage explicit paths only.** Never run `git add -A` or `git add .`. The main checkout carries unrelated local edits under `.agents/skills/`, and they must not end up in a commit.
+- **Migrations:** only lane C creates migrations (`0014`). If that ever changes, run `ls migrations` first and take the next free number.
+- **Progress is reported in the pull request description** (a checklist of tasks), not in a shared file, so two sessions never edit the same file to report status.
+- **Rebase before you push,** keep pull requests small (one plan or sub-plan each), and wait for CI before merging.
+
 ## Setup on the other computer
 
 The first analysis ran on a machine with local state that will not exist elsewhere: gitignored `.env` and `.env.local`, a virtualenv that was missing two dependencies, and global assistant rules in `~/.claude/CLAUDE.md`. Do this on the new machine.
 
-1. **Get the plans.** They are committed to `master` (the maintainer commits and pushes them from the first machine before switching).
+1. **Get the plans.** They are on `master` (commit `e583761`).
 
 ```bash
 git clone git@github.com:iWeslax83/teluvane.git && cd teluvane
