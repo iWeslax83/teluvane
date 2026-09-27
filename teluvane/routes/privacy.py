@@ -54,10 +54,22 @@ def read_retention(org_id: str = Depends(current_org)) -> dict:
 @router.put("/orgs/retention")
 def write_retention(
     retention_days: int | None = Body(default=None, ge=1, le=MAX_RETENTION_DAYS),
-    legal_hold: bool = Body(default=False),
+    legal_hold: bool | None = Body(default=None),
     org_id: str = Depends(current_org),
     authorization: str = Header(default=None),
 ) -> dict:
+    # A PUT is a partial update: omitting a field must leave it as it currently is, not reset
+    # it to a default. That matters most for legal_hold, since a caller who PUTs only
+    # retention_days (a natural update) must never silently lift an active hold. FastAPI can't
+    # tell "field absent" apart from "field explicitly null" for a bare scalar Body param, so
+    # both are treated the same way here: neither field changes unless the caller sends it with
+    # a real value. A caller who wants to lift a hold sends legal_hold=False explicitly; there
+    # is currently no way to clear an existing retention_days back to "no window" through this
+    # endpoint (only to change it to another number), which is an accepted limitation of this
+    # fix, not a new one.
     _owner_id(org_id, authorization)
-    set_retention(org_id, retention_days, legal_hold)
+    current = get_retention(org_id)
+    new_days = retention_days if retention_days is not None else current["retention_days"]
+    new_hold = legal_hold if legal_hold is not None else current["legal_hold"]
+    set_retention(org_id, new_days, new_hold)
     return get_retention(org_id)
