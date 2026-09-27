@@ -33,7 +33,7 @@ ingestion, LemonSqueezy billing, and a Postgres-backed store, not a single-user 
 | **Automated runs** | Pro orgs can put the tribunal on a timer instead of clicking "Run audit" (see Settings in the dashboard). |
 | **Evidence pack** | Exports a self-contained report (HTML on every plan, PDF export on Pro) with the full event log, verdict table, chain-integrity status, and framework citations. |
 
-On Pro plans, finalized sessions are also batched into a Merkle tree and their root is written to the `SessionAnchorRegistry` contract on Avalanche Fuji. Only the root hash and a session count go on chain, never event content or personal data. Once a session is anchored, anyone can recompute its chain head and Merkle root from a copy of the event log and check it against the on-chain record at [teluvane.com/verify](https://teluvane.com/verify), with no TELUVANE account and without trusting our database.
+On Pro plans, finalized sessions are also batched into a Merkle tree and their root is written to the `SessionAnchorRegistry` contract on Avalanche Fuji (a testnet; there is no mainnet deployment). Only the root hash and a session count go on chain, never event content or personal data. Once a session is anchored, anyone can recompute its chain head and Merkle root from a copy of the event log and check it against the on-chain record at [teluvane.com/verify](https://teluvane.com/verify), with no TELUVANE account and without trusting our database.
 
 ---
 

@@ -36,7 +36,7 @@ after the fact. There is no established default for this yet.
 
 ## Traction
 Early stage. No paying customers and no production usage yet. What exists: the recorder,
-the tribunal, evidence packs, an MCP server, and on-chain anchoring on Avalanche Fuji, all
+the tribunal, evidence packs, an MCP server, and on-chain anchoring on Avalanche Fuji (testnet only, no mainnet), all
 covered by CI. We are looking for design partners and for feedback on the detection rules.
 
 ## Business model
