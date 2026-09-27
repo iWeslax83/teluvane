@@ -54,8 +54,11 @@ def _clip(text: str, limit: int) -> str:
 
 def _events_to_text(events: list[Event], max_chars: int = MAX_LOG_CHARS) -> str:
     # Each field is capped, so one huge event cannot exceed the window on its own.
+    # An erased event shows only that its payload is gone, never stale content.
     lines = [
-        _clip(
+        f"#{e.seq} [{e.kind}] tool={e.tool} [payload erased]"
+        if e.erased
+        else _clip(
             f"#{e.seq} [{e.kind}] tool={e.tool} intent={_clip(e.intent, FIELD_CHARS)!r} "
             f"args={_clip(json.dumps(e.args, ensure_ascii=False), FIELD_CHARS)} "
             f"approved_by={e.approved_by} output={e.output[:OUTPUT_CHARS]!r}",

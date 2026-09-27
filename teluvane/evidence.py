@@ -12,6 +12,8 @@ def build_evidence_pack(
     chain_intact: bool,
     anchor: dict | None = None,
     canonical: list[dict] | None = None,
+    erasure: dict | None = None,
+    openings: list[dict] | None = None,
 ) -> dict:
     violations = [v for v in verdicts if v.violation]
     summary = {
@@ -19,6 +21,8 @@ def build_evidence_pack(
         "violations": len(violations),
         "chain_intact": chain_intact,
         "highest_severity": _highest_sev(violations),
+        "erased_events": (erasure or {}).get("erased_events", 0),
+        "unexplained_erasures": (erasure or {}).get("unexplained_erasures", 0),
     }
     js = {
         "session_id": session_id,
@@ -26,6 +30,9 @@ def build_evidence_pack(
         "summary": summary,
         "anchor": anchor,
         "canonical": canonical,
+        # v2 payload openings: sha256(bytes.fromhex(salt) + payload.encode()) must equal the
+        # event's payload_commitment. Erased events have no opening.
+        "openings": openings,
         "violations": [v.model_dump() for v in violations],
         "events": [e.model_dump() for e in events],
     }
@@ -43,13 +50,15 @@ def build_evidence_pdf(
     chain_intact: bool,
     anchor: dict | None = None,
     canonical: list[dict] | None = None,
+    erasure: dict | None = None,
+    openings: list[dict] | None = None,
 ) -> bytes:
     # Imported lazily: weasyprint pulls in cairo/pango bindings that only the PDF export
     # path needs, so the rest of the API can boot even if that native stack is unavailable.
     from weasyprint import HTML
 
     pack = build_evidence_pack(
-        session_id, events, verdicts, framework, chain_intact, anchor, canonical
+        session_id, events, verdicts, framework, chain_intact, anchor, canonical, erasure, openings
     )
     return HTML(string=pack["html"]).write_pdf()
 
@@ -89,6 +98,23 @@ def _render_anchor_html(anchor: dict | None) -> str:
     )
 
 
+def _render_erasure_html(summary: dict) -> str:
+    erased, unexplained = summary["erased_events"], summary["unexplained_erasures"]
+    if not erased:
+        return ""
+    note = (
+        f"<p><b>Erased content:</b> the personal content of {erased} event(s) was erased "
+        "on request or by retention policy. Their hashes stay in the chain, so the chain "
+        "still verifies, but the erased content can no longer be shown.</p>"
+    )
+    if unexplained:
+        note += (
+            f"<p><b>Warning:</b> {unexplained} of those erasures have no entry in the "
+            "erasure log. Treat the session as suspect until they are explained.</p>"
+        )
+    return note
+
+
 def _render_html(session_id, framework, summary, violations, events, anchor=None) -> str:
     rows = "".join(
         f"<tr><td>{_html.escape(v.rule_id)}</td><td>{v.severity}</td>"
@@ -98,11 +124,13 @@ def _render_html(session_id, framework, summary, violations, events, anchor=None
     )
     ev_rows = "".join(
         f"<tr><td>#{e.seq}</td><td>{e.kind}</td><td>{_html.escape(e.tool or '')}</td>"
-        f"<td>{_html.escape(e.intent)}</td><td><code>{_html.escape(str(e.args))}</code></td></tr>"
+        f"<td>{_html.escape('[erased]' if e.erased else e.intent)}</td>"
+        f"<td><code>{_html.escape('[erased]' if e.erased else str(e.args))}</code></td></tr>"
         for e in events
     )
     chain = "&#9989; intact" if summary["chain_intact"] else "&#10060; TAMPERED"
     anchor_html = _render_anchor_html(anchor)
+    erasure_html = _render_erasure_html(summary)
     return f"""<!doctype html><meta charset=utf-8>
 <title>Evidence Pack: {_html.escape(session_id)}</title>
 <style>body{{font-family:system-ui;margin:2rem;color:#1a1714}}
@@ -116,6 +144,7 @@ h1{{color:#b4451f}}.sev-critical{{color:#b4451f;font-weight:700}}</style>
 <p><b>Events:</b> {summary["events"]} &nbsp;|&nbsp;
 <b>Violations:</b> {summary["violations"]} &nbsp;|&nbsp;
 <b>Highest severity:</b> {summary["highest_severity"]}</p>
+{erasure_html}
 {anchor_html}
 <h2>Violations</h2><table><tr><th>Rule</th><th>Severity</th><th>Confidence</th>
 <th>Evidence</th><th>Framework ref</th><th>Rationale</th></tr>{rows}</table>

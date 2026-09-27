@@ -243,3 +243,23 @@ def test_retention_survives_cross_tenant_bad_timestamp(client):
             (org_b,),
         )
         assert cur.fetchone()[0] == 3  # org B's uncastable-ts payloads were left alone
+
+
+def test_evidence_pack_states_erasure_and_still_verifies(client, seeded):
+    _, h = seeded
+    client.post("/sessions/sx/erase", headers=h)
+    html = client.get("/evidence/sx", headers=h).text
+    assert "intact" in html and "Erased content" in html and "[erased]" in html
+    assert "jane@example.com" not in html
+
+
+def test_evidence_pack_before_erasure_lists_openings(client, seeded):
+    org, h = seeded
+    from teluvane.appstate import store
+    from teluvane.evidence import build_evidence_pack
+
+    events = store.events(org, "sx")
+    pack = build_evidence_pack(
+        "sx", events, [], "EU AI Act", True, openings=store.payload_openings(org, "sx")
+    )
+    assert len(pack["json"]["openings"]) == 2

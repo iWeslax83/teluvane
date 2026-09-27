@@ -34,14 +34,17 @@ def evidence(session_id: str, org_id: str = Depends(current_org)) -> str:
     verdicts = store.verdicts(org_id, session_id)
     anchor_dict = _evidence_anchor(org_id, session_id)
     canon = store.canonical_events(org_id, session_id) if anchor_dict else None
+    report = store.verify_report(org_id, session_id)
     pack = build_evidence_pack(
         session_id,
         events,
         verdicts,
         framework=base_pack_for_org(org_id).framework,
-        chain_intact=store.verify_chain(org_id, session_id),
+        chain_intact=report["chain_intact"],
         anchor=anchor_dict,
         canonical=canon,
+        erasure=report,
+        openings=store.payload_openings(org_id, session_id),
     )
     return pack["html"]
 
@@ -57,14 +60,17 @@ def evidence_pdf(session_id: str, org_id: str = Depends(current_org)) -> Respons
     verdicts = store.verdicts(org_id, session_id)
     anchor_dict = _evidence_anchor(org_id, session_id)
     canon = store.canonical_events(org_id, session_id) if anchor_dict else None
+    report = store.verify_report(org_id, session_id)
     pdf = build_evidence_pdf(
         session_id,
         events,
         verdicts,
         framework=base_pack_for_org(org_id).framework,
-        chain_intact=store.verify_chain(org_id, session_id),
+        chain_intact=report["chain_intact"],
         anchor=anchor_dict,
         canonical=canon,
+        erasure=report,
+        openings=store.payload_openings(org_id, session_id),
     )
     return Response(
         content=pdf,
