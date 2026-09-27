@@ -32,6 +32,7 @@ ingestion, LemonSqueezy billing, and a Postgres-backed store, not a single-user 
 | **Tribunal** | Runs against the merged policy pack (built-in EU AI Act rules plus any custom rules an org has added). Without an Anthropic key it uses a deterministic keyword detector; with one, a LangGraph fan-out of Claude "lens" checks feeds a consensus judge. |
 | **Automated runs** | Pro orgs can put the tribunal on a timer instead of clicking "Run audit" (see Settings in the dashboard). |
 | **Evidence pack** | Exports a self-contained report (HTML on every plan, PDF export on Pro) with the full event log, verdict table, chain-integrity status, and framework citations. |
+| **Privacy controls** | The chain hashes a salted commitment to each event's content (intent, arguments, output, approval) instead of the content. The owner can erase content per session, or set a retention window and a legal hold, and the chain and on-chain anchors keep verifying. See [docs/gdpr-and-immutable-logs.md](docs/gdpr-and-immutable-logs.md). This is a mechanism, not a compliance claim. |
 
 On Pro plans, finalized sessions are also batched into a Merkle tree and their root is written to the `SessionAnchorRegistry` contract on Avalanche Fuji. Only the root hash and a session count go on chain, never event content or personal data. Once a session is anchored, anyone can recompute its chain head and Merkle root from a copy of the event log and check it against the on-chain record at [teluvane.com/verify](https://teluvane.com/verify), with no TELUVANE account and without trusting our database.
 
@@ -143,7 +144,7 @@ pytest -v
 cd frontend && npm test
 ```
 
-Coverage includes hash-chain integrity, tenant isolation, JWT/API-key auth, the offline and live
+Coverage includes hash-chain integrity, content commitments, erasure and retention, tenant isolation, JWT/API-key auth, the offline and live
 tribunal, billing plan gating, custom policy rule merging, the audit scheduler's due-check logic,
 team invites, webhook delivery, session search/pagination, policy framework selection, and the
 MCP server's tool calls.

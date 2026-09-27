@@ -21,6 +21,15 @@ row is edited or deleted after the fact, verifying the chain against its stored 
 visibly. This does not prevent a privileged database user from editing rows, it makes such
 edits detectable rather than silent.
 
+## Personal data and erasure
+Recorded content (intent, tool arguments, output, approval field) can be erased per session, or
+automatically after a retention window, while the hash chain and any on-chain anchors keep
+verifying. The chain hash covers a salted commitment to the content instead of the content
+itself. Fields that are kept (ids, tool name, timestamps, the commitment), and what erasure does
+not cover (exports, provider backups, model-provider copies, events recorded before this
+feature), are listed in docs/gdpr-and-immutable-logs.md. This is a mechanism, not a claim that
+any customer is compliant with any law.
+
 ## Secrets and encryption
 - `TELUVANE_SECRET_KEY` (Fernet symmetric key) encrypts sensitive stored values.
 - No secrets are committed to source control; all credentials are injected as environment
