@@ -1,0 +1,22 @@
+{
+  "events": [
+    {
+      "seq": 1,
+      "prev_hash": "GENESIS",
+      "hash": "e78b3327f467044c849c4aab38066782c3535301d49f7847ecb8228122bd2b81",
+      "canonical": "{\"agent_id\": \"a\", \"kind\": \"llm_call\", \"org_id\": \"org1\", \"payload_commitment\": \"4399715af460016859b426189809a64166b03b78c68387ab763e717b6545947b\", \"prev\": \"GENESIS\", \"session_id\": \"s1\", \"tool\": null, \"ts\": \"2026-09-27T08:41:31.833441+00:00\", \"v\": 2}"
+    },
+    {
+      "seq": 2,
+      "prev_hash": "e78b3327f467044c849c4aab38066782c3535301d49f7847ecb8228122bd2b81",
+      "hash": "d09e58f0b7a401648dc6632c0e11fda6d35523da94ea776d074aac7e0ce80952",
+      "canonical": "{\"agent_id\": \"a\", \"kind\": \"llm_call\", \"org_id\": \"org1\", \"payload_commitment\": \"447343d3fb549005f75a543c38e6ce8d6cf373d60e645d3bd5513298d39f6167\", \"prev\": \"e78b3327f467044c849c4aab38066782c3535301d49f7847ecb8228122bd2b81\", \"session_id\": \"s1\", \"tool\": null, \"ts\": \"2026-09-27T08:41:31.839265+00:00\", \"v\": 2}"
+    },
+    {
+      "seq": 3,
+      "prev_hash": "d09e58f0b7a401648dc6632c0e11fda6d35523da94ea776d074aac7e0ce80952",
+      "hash": "3ae36bcb58f02a4fbc7675bc2f8823bf7fd92f36cf71c563222f6e7fa8314202",
+      "canonical": "{\"agent_id\": \"a\", \"kind\": \"llm_call\", \"org_id\": \"org1\", \"payload_commitment\": \"46f0ee5d2a7a0a2e204c508c17e140a5356905cbba0f8b83d921d8ef24c077aa\", \"prev\": \"d09e58f0b7a401648dc6632c0e11fda6d35523da94ea776d074aac7e0ce80952\", \"session_id\": \"s1\", \"tool\": null, \"ts\": \"2026-09-27T08:41:31.844438+00:00\", \"v\": 2}"
+    }
+  ]
+}

@@ -12,7 +12,7 @@ const destDir = join(here, "..", "lib", "__fixtures__");
 
 mkdirSync(destDir, { recursive: true });
 
-for (const name of ["merkle_vectors.json", "chain_vectors.json"]) {
+for (const name of ["merkle_vectors.json", "chain_vectors.json", "chain_vectors_v2.json"]) {
   copyFileSync(join(srcDir, name), join(destDir, name));
   console.log(`synced ${name}`);
 }
