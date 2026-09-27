@@ -323,6 +323,15 @@ class Store:
             self._assert_scoped(org_id, q)
         with self.pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
+                # Same advisory lock, same key, as audited_run (auditlock.py). Held for the
+                # whole erasure and released on commit below, exactly like audited_run holds
+                # it for the whole audit. Without this, an audit that has already read this
+                # session's events but not yet written its verdicts can race an erasure: the
+                # erasure's verdict-redaction UPDATE finds nothing to redact, and the audit's
+                # verdicts land afterward possibly quoting content that was just erased.
+                cur.execute(
+                    "SELECT pg_advisory_xact_lock(hashtext(%s))", (f"{org_id}:{session_id}",)
+                )
                 cur.execute(sql_scope, params)
                 scope = cur.fetchall()
                 erasable = [r["seq"] for r in scope if r["hash_version"] == 2 and r["has_payload"]]
