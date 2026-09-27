@@ -27,10 +27,16 @@ router = APIRouter()
 def ingest(request: Request, e: Event, org_id: str = Depends(org_from_api_key)) -> Event:
     # ts is client supplied and later cast to timestamptz by the stats and retention
     # queries; one unparseable value would break those for the whole org. Checked here, not
-    # in the Event model, so a legacy row with a bad ts can still be read back.
+    # in the Event model, so a legacy row with a bad ts can still be read back. A naive
+    # timestamp (no UTC offset) passes fromisoformat but would never expire under any
+    # retention window, since the retention SQL compares it against timestamptz using a
+    # different, incomparable type; reject it here instead of accepting a ts retention can
+    # never act on.
     try:
-        datetime.fromisoformat(e.ts)
+        dt = datetime.fromisoformat(e.ts)
     except ValueError:
+        raise HTTPException(status_code=422, detail="ts must be an ISO 8601 timestamp")
+    if dt.tzinfo is None:
         raise HTTPException(status_code=422, detail="ts must be an ISO 8601 timestamp")
     return store.append(org_id, e)
 
