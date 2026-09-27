@@ -13,7 +13,8 @@ class Rule(BaseModel):
     severity: Severity
     framework_ref: str
     detector_hint: str
-    keywords: list[str] = []  # used by the offline (no-LLM) detector
+    keywords: list[str] = []  # fallback for the offline (no-LLM) detector
+    detector: str | None = None  # name in teluvane.detectors.DETECTORS; wins over keywords
 
 
 class PolicyPack(BaseModel):
