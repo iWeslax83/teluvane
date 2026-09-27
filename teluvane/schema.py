@@ -31,6 +31,9 @@ class Event(BaseModel):
     cost_usd: Optional[float] = None  # computed by the store if omitted and model is known
     ts: str = Field(default_factory=utcnow_iso)
     # assigned on persist:
+    hash_version: Optional[int] = None  # 1 = plaintext in the hash, 2 = payload commitment
+    payload_commitment: Optional[str] = None  # v2 only
+    erased: bool = False  # v2 only: the payload was erased, the chain hash still verifies
     seq: Optional[int] = None
     prev_hash: Optional[str] = None
     hash: Optional[str] = None
