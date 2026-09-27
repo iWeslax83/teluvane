@@ -18,9 +18,15 @@ PERSONAL_KINDS = frozenset({"ssn", "card", "iban", "tckn"})
 # Personal data plus credentials: what must not leave in an outbound call.
 SENSITIVE_KINDS = PERSONAL_KINDS | {"secret"}
 
-_EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
+# Every quantifier is bounded: an open-ended local part rescans a long run of [A-Za-z0-9._%+-]
+# from each word boundary, which is quadratic on input like "a-a-a-...".
+_EMAIL = re.compile(
+    r"\b[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]{1,63}(?:\.[A-Za-z0-9-]{1,63}){0,8}\.[A-Za-z]{2,24}\b"
+)
 _SSN = re.compile(r"\b(?!000|666|9\d\d)\d{3}-(?!00)\d{2}-(?!0000)\d{4}\b")
-_CARD = re.compile(r"\b(?:\d[ -]?){12,18}\d\b")
+# Issuers start with 2 to 6. Luhn alone passes about one in ten random numbers, including
+# millisecond timestamps (1695800000008).
+_CARD = re.compile(r"\b[2-6](?:[ -]?\d){12,18}\b")
 _IBAN = re.compile(r"\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,3})?\b")
 _TCKN = re.compile(r"(?<!\d)[1-9]\d{10}(?!\d)")
 _SECRETS = re.compile(
@@ -64,8 +70,9 @@ def _tckn_ok(s: str) -> bool:
 
 def find_pii(text: str) -> list[PiiHit]:
     hits: list[PiiHit] = []
-    for m in _EMAIL.finditer(text):
-        hits.append(PiiHit("email", m.group()))
+    if "@" in text:
+        for m in _EMAIL.finditer(text):
+            hits.append(PiiHit("email", m.group()))
     for m in _SSN.finditer(text):
         hits.append(PiiHit("ssn", m.group()))
     for m in _CARD.finditer(text):

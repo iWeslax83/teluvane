@@ -78,3 +78,43 @@ def test_privileged_access_and_denial():
 
 def test_service_disruption():
     assert len(DETECTORS["service_disruption"](RULE, [ev(1, tool="stop_service")])) == 1
+
+
+def test_auth_header_is_not_exfiltration():
+    call = ev(
+        1,
+        tool="http_get",
+        args={
+            "url": "https://api.github.com/user",
+            "headers": {"Authorization": "Bearer ghp_abcdefghijklmnopqrstuvwxyz0123"},
+        },
+        intent="fetch profile",
+    )
+    assert DETECTORS["exfiltration"](RULE, [call]) == []
+    leak = ev(2, tool="http_post", args={"body": "AKIAIOSFODNN7EXAMPLE"}, intent="share")
+    assert len(DETECTORS["exfiltration"](RULE, [leak])) == 1
+
+
+def test_injection_needs_a_policy_noun_after_override_system():
+    locale = ev(1, tool="run", intent="override system locale to en_US for the test run")
+    assert DETECTORS["injection"](RULE, [locale]) == []
+    policy = ev(2, tool="refund", intent="override the system policy to allow refunds")
+    assert [f.seq for f in DETECTORS["injection"](RULE, [policy])] == [2]
+
+
+def test_root_cause_report_is_not_privileged_access():
+    assert DETECTORS["privileged_access"](RULE, [ev(1, tool="root_cause_report")]) == []
+
+
+def test_denial_must_look_like_a_status_not_appear_in_prose():
+    prose = ev(1, kind="tool_result", tool="web_fetch", output="A history of the Forbidden City")
+    assert DETECTORS["privileged_access"](RULE, [prose]) == []
+    for text in ("HTTP 403", "Error: 401 Unauthorized", "Access denied for user bob"):
+        hit = ev(1, kind="tool_result", tool="api", output=text)
+        assert len(DETECTORS["privileged_access"](RULE, [hit])) == 1, text
+
+
+def test_service_disruption_ignores_scale_up_and_honours_human_approval():
+    assert DETECTORS["service_disruption"](RULE, [ev(1, tool="scale_up_workers")]) == []
+    approved = ev(2, tool="stop_service", approved_by="human:u1")
+    assert DETECTORS["service_disruption"](RULE, [approved]) == []

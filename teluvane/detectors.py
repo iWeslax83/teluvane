@@ -30,13 +30,18 @@ _STATE_CHANGE = frozenset(
     "delete drop remove truncate wipe destroy transfer pay payment refund deploy shutdown "
     "revoke terminate".split()
 )
-_DISRUPTION = frozenset("shutdown terminate stop disable destroy kill scale".split())
-_PRIVILEGED = frozenset("admin sudo root superuser".split())
-_DENIED = re.compile(r"access denied|permission denied|forbidden|not authori[sz]ed", re.I)
+_DISRUPTION = frozenset("shutdown terminate stop disable destroy kill".split())
+_PRIVILEGED = frozenset("admin sudo superuser".split())
+# A denial reads like a status line at the start of the output, not a word in a web page.
+_DENIED = re.compile(
+    r"^\s*(?:error:?\s*|http\s*)*(?:40[13]\b|access denied|permission denied|forbidden"
+    r"|not authori[sz]ed)",
+    re.I,
+)
 _INJECTION = re.compile(
     r"\b(ignore|disregard|forget)\s+(all\s+|any\s+|the\s+)?(previous|prior|above|earlier|system)"
     r"\s+(instructions?|rules?|prompts?)"
-    r"|\boverride\s+(the\s+)?(system|safety|policy)"
+    r"|\boverride\s+(the\s+)?(system\s+(prompt|instructions?|rules?|polic(y|ies))|safety|policy)"
     r"|\b(developer|jailbreak)\s+mode\b",
     re.I,
 )
@@ -49,6 +54,22 @@ def _tool_tokens(e: Event) -> set[str]:
 
 def _args_text(e: Event) -> str:
     return json.dumps(e.args, ensure_ascii=False)
+
+
+# Credentials in these fields authenticate the call; they are not the data being sent.
+_AUTH_KEYS = frozenset({"authorization", "proxy-authorization", "headers", "cookie"})
+
+
+def _without_auth(value):
+    if isinstance(value, dict):
+        return {k: _without_auth(v) for k, v in value.items() if str(k).lower() not in _AUTH_KEYS}
+    if isinstance(value, list):
+        return [_without_auth(v) for v in value]
+    return value
+
+
+def _payload_text(e: Event) -> str:
+    return json.dumps(_without_auth(e.args), ensure_ascii=False)
 
 
 def _is_tool_call(e: Event) -> bool:
@@ -64,7 +85,7 @@ def exfiltration(rule: Rule, events: list[Event]) -> list[Finding]:
     for e in events:
         if not (_is_tool_call(e) and _tool_tokens(e) & _OUTBOUND):
             continue
-        payload = f"{e.intent} {_args_text(e)}"
+        payload = f"{e.intent} {_payload_text(e)}"
         if has_sensitive(payload):
             out.append(Finding(e.seq, 0.9, "outbound tool call carries sensitive data"))
         elif _EXFIL_WORDS.search(payload):
@@ -110,7 +131,7 @@ def service_disruption(rule: Rule, events: list[Event]) -> list[Finding]:
     return [
         Finding(e.seq, 0.75, f"tool {e.tool!r} can take a service offline")
         for e in events
-        if _is_tool_call(e) and _tool_tokens(e) & _DISRUPTION
+        if _is_tool_call(e) and _tool_tokens(e) & _DISRUPTION and not _human_approved(e)
     ]
 
 

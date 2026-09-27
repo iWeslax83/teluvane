@@ -1,3 +1,5 @@
+import time
+
 from teluvane.pii import find_pii, has_sensitive
 
 
@@ -35,3 +37,17 @@ def test_secret():
     assert has_sensitive("key AKIAIOSFODNN7EXAMPLE")
     assert has_sensitive("-----BEGIN RSA PRIVATE KEY-----")
     assert not has_sensitive("plain text")
+
+
+def test_scan_stays_fast_on_hostile_input():
+    # Unbounded email local-part matching made this quadratic (14 s for 100 KB).
+    for text in ("a-" * 100_000, "a." * 100_000, "1-" * 50_000):
+        start = time.perf_counter()
+        find_pii(text)
+        assert time.perf_counter() - start < 1.0
+
+
+def test_millisecond_timestamps_are_not_cards():
+    # About one in ten 13-digit numbers passes Luhn; real issuers start with 2 to 6.
+    for n in range(1695800000000, 1695800000100):
+        assert "card" not in kinds(f'{{"ts": {n}}}'), n

@@ -1,5 +1,6 @@
 # teluvane/teluvane/tribunal.py
 import json
+import math
 import os
 import re
 from collections import defaultdict
@@ -17,6 +18,7 @@ CONF_THRESHOLD = 0.6  # a lone lens (TRIBUNAL_LENS_COUNT=1) must reach this to c
 LENS_MODEL = "claude-haiku-4-5-20251001"
 KEYWORD_CONFIDENCE = 0.4  # keyword-only matches are weak evidence; keep them below CONF_THRESHOLD
 OUTPUT_CHARS = 500
+FIELD_CHARS = 2_000  # cap for one event's intent and for its args JSON
 MAX_LOG_CHARS = 60_000  # ~15k tokens; older events are dropped first (see _events_to_text)
 
 # Each lens gets the same rule and log but a different stance, so a confirmed violation has
@@ -44,11 +46,21 @@ def lens_names() -> list[str]:
     return list(LENSES)[: max(1, min(n, len(LENSES)))]
 
 
+def _clip(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}...[truncated {len(text) - limit} chars]"
+
+
 def _events_to_text(events: list[Event], max_chars: int = MAX_LOG_CHARS) -> str:
+    # Each field is capped, so one huge event cannot exceed the window on its own.
     lines = [
-        f"#{e.seq} [{e.kind}] tool={e.tool} intent={e.intent!r} "
-        f"args={json.dumps(e.args, ensure_ascii=False)} "
-        f"approved_by={e.approved_by} output={e.output[:OUTPUT_CHARS]!r}"
+        _clip(
+            f"#{e.seq} [{e.kind}] tool={e.tool} intent={_clip(e.intent, FIELD_CHARS)!r} "
+            f"args={_clip(json.dumps(e.args, ensure_ascii=False), FIELD_CHARS)} "
+            f"approved_by={e.approved_by} output={e.output[:OUTPUT_CHARS]!r}",
+            max_chars,
+        )
         for e in events
     ]
     kept: list[str] = []
@@ -130,6 +142,19 @@ Respond with ONLY JSON:
 PARSE_ERROR = "[lens parse error]"
 
 
+def _reply_text(content) -> str:
+    """Model replies are a string, or a list of content blocks."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(b.get("text", "") if isinstance(b, dict) else str(b) for b in content)
+    return str(content)
+
+
+def _is_seq(x) -> bool:
+    return isinstance(x, int) and not isinstance(x, bool)
+
+
 def run_lens(
     rule: Rule,
     events: list[Event],
@@ -147,12 +172,27 @@ def run_lens(
         detector_hint=rule.detector_hint,
         log=_events_to_text(events),
     )
-    raw = llm.invoke(msg).content
+    raw = _reply_text(llm.invoke(msg).content)
     try:
         data = json.loads(raw[raw.find("{") : raw.rfind("}") + 1])
-        violation = bool(data["violation"])
+        violation = data["violation"]
         confidence = float(data["confidence"])
-    except (json.JSONDecodeError, ValueError, KeyError, TypeError):
+        if not isinstance(violation, bool) or not math.isfinite(confidence):
+            raise ValueError("violation must be a bool and confidence a finite number")
+        if not 0.0 <= confidence <= 1.0:
+            raise ValueError("confidence must be between 0 and 1")
+        seqs = data.get("evidence_seqs")
+        return Verdict(
+            session_id=session_id,
+            rule_id=rule.id,
+            severity=rule.severity,
+            violation=violation,
+            confidence=confidence,
+            evidence_seqs=[x for x in (seqs if isinstance(seqs, list) else []) if _is_seq(x)],
+            rationale=str(data.get("rationale") or ""),
+            framework_ref=rule.framework_ref,
+        )
+    except (ValueError, KeyError, TypeError, AttributeError):
         # A misbehaving lens response must not crash the whole audit. consolidate() ignores
         # parse errors instead of counting them as votes for "no violation".
         return Verdict(
@@ -165,16 +205,6 @@ def run_lens(
             rationale=PARSE_ERROR,
             framework_ref=rule.framework_ref,
         )
-    return Verdict(
-        session_id=session_id,
-        rule_id=rule.id,
-        severity=rule.severity,
-        violation=violation,
-        confidence=confidence,
-        evidence_seqs=data.get("evidence_seqs", []),
-        rationale=data.get("rationale", ""),
-        framework_ref=rule.framework_ref,
-    )
 
 
 def consolidate(verdicts: list[Verdict]) -> list[Verdict]:

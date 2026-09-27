@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from teluvane.policy import PolicyPack, Rule
 from teluvane.schema import Event, Verdict
 from teluvane.tribunal import (
@@ -114,3 +116,48 @@ def test_audit_runs_lenses_per_rule(monkeypatch):
     out = audit([], "s", pack, anthropic_api_key="k")
     assert sorted(calls) == [("r1", "auditor"), ("r1", "literalist"), ("r1", "skeptic")]
     assert len(out) == 1 and out[0].violation
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        '{"violation": "false", "confidence": 0.9}',
+        '{"violation": false, "confidence": 7}',
+        '{"violation": true, "confidence": NaN}',
+        '{"violation": true, "confidence": -0.1}',
+        "[1, 2]",
+        "no json here",
+    ],
+)
+def test_invalid_lens_values_are_parse_errors(reply):
+    assert run_lens(RULE, [], "s", llm=FakeLLM([reply])).rationale == PARSE_ERROR
+
+
+def test_odd_optional_fields_do_not_crash_the_audit():
+    for extra in ('"evidence_seqs": null', '"rationale": null', '"evidence_seqs": ["#2", 3]'):
+        reply = '{"violation": true, "confidence": 0.9, ' + extra + "}"
+        got = run_lens(RULE, [], "s", llm=FakeLLM([reply]))
+        assert got.violation and got.rationale != PARSE_ERROR
+    assert run_lens(
+        RULE,
+        [],
+        "s",
+        llm=FakeLLM(['{"violation": true, "confidence": 0.9, "evidence_seqs": ["#2", 3]}']),
+    ).evidence_seqs == [3]
+
+
+def test_reply_given_as_content_blocks_is_read():
+    blocks = [{"type": "text", "text": '{"violation": true, "confidence": 0.8}'}]
+    assert run_lens(RULE, [], "s", llm=FakeLLM([blocks])).violation
+
+
+def test_one_oversized_event_cannot_blow_the_window():
+    big = Event(
+        agent_id="a", session_id="s", kind="tool_call", tool="t", args={"b": "y" * 1_000_000}
+    )
+    big.seq = 2
+    text = _events_to_text([big], max_chars=5000)
+    assert len(text) <= 5200 and "truncated" in text
+    huge_intent = Event(agent_id="a", session_id="s", kind="llm_call", intent="z" * 500_000)
+    huge_intent.seq = 1
+    assert len(_events_to_text([huge_intent], max_chars=5000)) <= 5200
