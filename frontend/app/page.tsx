@@ -29,7 +29,11 @@ const softwareLd = {
   description:
     "Records every LLM call, tool call, and tool result an AI agent makes into a SHA-256 hash-chained log, then audits sessions against EU AI Act, ISO 42001, NIST AI RMF, and SOC 2 policy packs.",
   publisher: { "@id": `${siteUrl}/#organization` },
-  offers: { "@type": "Offer", price: "0", priceCurrency: "USD", description: "Free plan" },
+  offers: [
+    { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
+    { "@type": "Offer", name: "Starter", price: "9.99", priceCurrency: "USD", priceSpecification: { "@type": "UnitPriceSpecification", price: "9.99", priceCurrency: "USD", billingDuration: "P1M" } },
+    { "@type": "Offer", name: "Pro", price: "19.99", priceCurrency: "USD", priceSpecification: { "@type": "UnitPriceSpecification", price: "19.99", priceCurrency: "USD", billingDuration: "P1M" } },
+  ],
 };
 
 export default function Landing() {
