@@ -6,6 +6,7 @@ import { sectionStyle, headingStyle, bodyStyle } from "@/lib/legalPageStyles";
 export const metadata: Metadata = {
   title: "Privacy Policy: TELUVANE",
   description: "How TELUVANE collects, uses, and protects your data.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default function PrivacyPage() {

@@ -8,11 +8,20 @@ const post = blogPosts.find((p) => p.slug === "tamper-evident-agent-logs")!;
 export const metadata: Metadata = {
   title: `${post.title}: TELUVANE`,
   description: post.description,
+  alternates: { canonical: `/blog/${post.slug}` },
+  openGraph: {
+    type: "article",
+    title: post.title,
+    description: post.description,
+    url: `/blog/${post.slug}`,
+    publishedTime: post.date,
+    authors: ["Emir Sakarya"],
+  },
 };
 
 export default function Post() {
   return (
-    <ArticleLayout title={post.title} description={post.description} date={post.date}>
+    <ArticleLayout slug={post.slug} title={post.title} description={post.description} date={post.date}>
       <p style={proseStyles.p}>
         Most AI agent logging answers &quot;what did the agent do?&quot; A timestamped row says
         the agent called <code>send_email</code> at 14:32:07 with certain arguments. That&apos;s

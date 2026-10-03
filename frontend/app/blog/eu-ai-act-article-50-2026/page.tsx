@@ -8,11 +8,20 @@ const post = blogPosts.find((p) => p.slug === "eu-ai-act-article-50-2026")!;
 export const metadata: Metadata = {
   title: `${post.title}: TELUVANE`,
   description: post.description,
+  alternates: { canonical: `/blog/${post.slug}` },
+  openGraph: {
+    type: "article",
+    title: post.title,
+    description: post.description,
+    url: `/blog/${post.slug}`,
+    publishedTime: post.date,
+    authors: ["Emir Sakarya"],
+  },
 };
 
 export default function Post() {
   return (
-    <ArticleLayout title={post.title} description={post.description} date={post.date}>
+    <ArticleLayout slug={post.slug} title={post.title} description={post.description} date={post.date}>
       <p style={proseStyles.p}>
         If your product uses an AI agent that talks to customers, generates content, or makes
         decisions that affect people, 2026 is the year the EU AI Act starts asking you to prove
