@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     type: "profile",
     title: "About TELUVANE and its founder, Emir Sakarya",
     url: "/about",
+    images: ["/opengraph-image"],
   },
 };
 

@@ -16,6 +16,7 @@ export const metadata: Metadata = {
     url: `/blog/${post.slug}`,
     publishedTime: post.date,
     authors: ["Emir Sakarya"],
+    images: ["/opengraph-image"],
   },
 };
 
