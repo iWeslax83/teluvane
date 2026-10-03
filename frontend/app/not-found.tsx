@@ -30,12 +30,13 @@ export default function NotFound() {
           height: 48,
           borderRadius: 12,
           background: "#1a1714",
+          color: "#f4efe6",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <BrandMark size={28} />
+        <BrandMark size={28} dot="#6f9db4" />
       </div>
       <h1 style={{ fontSize: "2rem", fontWeight: 800, letterSpacing: "-0.02em", margin: 0 }}>
         Page not found
