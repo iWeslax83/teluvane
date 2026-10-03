@@ -8,6 +8,8 @@ export default function Footer() {
         <div>
           <a href="mailto:hello@teluvane.com" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Contact</a>
           &nbsp;·&nbsp;
+          <a href="/about" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>About</a>
+          &nbsp;·&nbsp;
           <a href="/blog" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Blog</a>
           &nbsp;·&nbsp;
           <a href="/login" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Dashboard</a>

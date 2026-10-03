@@ -4,15 +4,38 @@ import LandingBody from "@/components/landing/LandingBody";
 import BrandMark from "@/components/BrandMark";
 import { INK, ACCENT, ACCENT_ON_FILL } from "@/lib/landingTheme";
 import { landingSans } from "@/lib/landingFont";
+import JsonLd from "@/components/JsonLd";
+import { siteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "TELUVANE: AI Agent Accountability",
   description: "Tamper-evident flight recorder and autonomous compliance tribunal for AI agents. Prove what your AI agents did, before a regulator asks.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "TELUVANE: AI Agent Accountability",
+    description: "Tamper-evident flight recorder and autonomous compliance tribunal for AI agents.",
+    url: "/",
+  },
+};
+
+const softwareLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "@id": `${siteUrl}/#software`,
+  name: "TELUVANE",
+  url: siteUrl,
+  applicationCategory: "SecurityApplication",
+  operatingSystem: "Web",
+  description:
+    "Records every LLM call, tool call, and tool result an AI agent makes into a SHA-256 hash-chained log, then audits sessions against EU AI Act, ISO 42001, NIST AI RMF, and SOC 2 policy packs.",
+  publisher: { "@id": `${siteUrl}/#organization` },
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD", description: "Free plan" },
 };
 
 export default function Landing() {
   return (
     <div className={landingSans.className}>
+      <JsonLd data={softwareLd} />
       <nav className="landing-nav">
         <a href="#opening" className="brand landing-link" style={{ color: INK, textDecoration: "none" }}>
           <span className="mark"><BrandMark /></span> TELUVANE

@@ -7,6 +7,7 @@ import { BG, INK, ACCENT, MUTED, BORDER } from "@/lib/landingTheme";
 export const metadata: Metadata = {
   title: "Blog: TELUVANE",
   description: "AI agent compliance, audit trails, and the frameworks that govern them, explained plainly.",
+  alternates: { canonical: "/blog" },
 };
 
 export default function BlogIndex() {

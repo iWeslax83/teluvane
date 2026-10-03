@@ -1,5 +1,7 @@
 // frontend/components/blog/ArticleLayout.tsx
 import Link from "next/link";
+import JsonLd from "@/components/JsonLd";
+import { siteUrl } from "@/lib/site";
 import { BG, INK, ACCENT, MUTED, BORDER } from "@/lib/landingTheme";
 
 export const proseStyles = {
@@ -9,18 +11,34 @@ export const proseStyles = {
 };
 
 export default function ArticleLayout({
+  slug,
   title,
   description,
   date,
   children,
 }: {
+  slug: string;
   title: string;
   description: string;
   date: string;
   children: React.ReactNode;
 }) {
+  const postLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: title,
+    description,
+    datePublished: date,
+    dateModified: date,
+    mainEntityOfPage: `${siteUrl}/blog/${slug}`,
+    author: { "@id": `${siteUrl}/about#emir-sakarya` },
+    publisher: { "@id": `${siteUrl}/#organization` },
+    inLanguage: "en",
+  };
+
   return (
     <main id="main-content" tabIndex={-1} style={{ background: BG, color: INK, minHeight: "100dvh", lineHeight: 1.6 }}>
+      <JsonLd data={postLd} />
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "4rem 1.5rem 6rem" }}>
         <Link href="/blog" className="landing-link" style={{ color: ACCENT, fontSize: ".9rem", fontWeight: 600, textDecoration: "none" }}>
           &larr; Back to blog

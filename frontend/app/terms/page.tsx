@@ -6,6 +6,7 @@ import { sectionStyle, headingStyle, bodyStyle } from "@/lib/legalPageStyles";
 export const metadata: Metadata = {
   title: "Terms of Service: TELUVANE",
   description: "The terms governing your use of TELUVANE.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {

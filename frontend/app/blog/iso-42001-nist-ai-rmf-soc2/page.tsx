@@ -8,11 +8,20 @@ const post = blogPosts.find((p) => p.slug === "iso-42001-nist-ai-rmf-soc2")!;
 export const metadata: Metadata = {
   title: `${post.title}: TELUVANE`,
   description: post.description,
+  alternates: { canonical: `/blog/${post.slug}` },
+  openGraph: {
+    type: "article",
+    title: post.title,
+    description: post.description,
+    url: `/blog/${post.slug}`,
+    publishedTime: post.date,
+    authors: ["Emir Sakarya"],
+  },
 };
 
 export default function Post() {
   return (
-    <ArticleLayout title={post.title} description={post.description} date={post.date}>
+    <ArticleLayout slug={post.slug} title={post.title} description={post.description} date={post.date}>
       <p style={proseStyles.p}>
         &quot;What compliance framework do we need?&quot; usually gets answered by whoever is
         asking you for it, a customer&apos;s security questionnaire, an enterprise procurement

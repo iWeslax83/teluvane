@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Verify a TELUVANE session on Avalanche",
   description:
     "Check that an AI agent session log has not changed since it was recorded. Runs in your browser, reads Avalanche Fuji directly, no account needed.",
+  alternates: { canonical: "/verify" },
 };
 
 export default function VerifyPage() {
