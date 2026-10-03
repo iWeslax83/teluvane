@@ -8,7 +8,7 @@ import { BG, INK, ACCENT, MUTED, BORDER } from "@/lib/landingTheme";
 export const metadata: Metadata = {
   title: "About TELUVANE and its founder, Emir Sakarya",
   description:
-    "TELUVANE is built by Emir Sakarya in Bursa, Türkiye. Why it exists, who builds it, and where to find the code.",
+    "TELUVANE is built by Emir Sakarya, a student engineer in Bursa, Türkiye. What it does, who builds it, and where to find the code.",
   alternates: { canonical: "/about" },
   openGraph: {
     type: "profile",
@@ -58,13 +58,13 @@ export default function AboutPage() {
 
         <h2 style={h2}>Who builds it</h2>
         <p style={p}>
-          TELUVANE is founded and built by {FOUNDER.name}, an engineer in Bursa, Türkiye. {FOUNDER.name} also founded <a href={FOUNDER.stratos} rel="noopener" style={link}>Stratos UAV</a>, a student engineering team building autonomous aircraft, and was part of the team that placed first in Turkey at the NASA Space Apps Challenge 2025.
+          I&apos;m {FOUNDER.name}, a student engineer in Bursa, Türkiye, and I build TELUVANE. I also founded <a href={FOUNDER.stratos} rel="noopener" style={link}>Stratos UAV</a>, a student engineering team building autonomous aircraft. In 2025 I placed first in Turkey at the NASA Space Apps Challenge with a simulator of drug crystal growth in microgravity.
         </p>
 
         <h2 style={h2}>Find us</h2>
         <ul style={{ paddingLeft: "1.2rem", margin: 0 }}>
           <li style={p}><a href={FOUNDER.github + "/teluvane"} rel="noopener" style={link}>Source code on GitHub</a></li>
-          <li style={p}><a href={FOUNDER.linkedin} rel="noopener" style={link}>{FOUNDER.name} on LinkedIn</a></li>
+          <li style={p}><a href={FOUNDER.linkedin} rel="noopener" style={link}>Connect on LinkedIn</a></li>
           <li style={p}><a href="mailto:hello@teluvane.com" style={link}>hello@teluvane.com</a></li>
         </ul>
 
