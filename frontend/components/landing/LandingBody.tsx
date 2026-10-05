@@ -6,7 +6,6 @@ import EvidenceLogCard from "./EvidenceLogCard";
 import PricingZigzag from "./PricingZigzag";
 import Cta from "./Cta";
 import Footer from "./Footer";
-import StickyMobileCta from "./StickyMobileCta";
 import LandingInteractionStyles from "./LandingInteractionStyles";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { BG, INK, ACCENT, MUTED, BORDER } from "@/lib/landingTheme";
@@ -107,10 +106,10 @@ export default function LandingBody() {
         <style>{".fade-section{opacity:1 !important;}"}</style>
       </noscript>
 
-      <FadeInSection id="opening" eager style={{ padding: "4.5rem 1.5rem 5rem" }}>
+      <FadeInSection id="opening" eager style={{ padding: "clamp(2rem, 6vw, 4.5rem) 1.25rem clamp(3rem, 7vw, 5rem)" }}>
         <div style={{
           maxWidth: 1080, margin: "0 auto",
-          display: "flex", flexWrap: "wrap-reverse", gap: "3rem", alignItems: "center",
+          display: "flex", flexWrap: "wrap", gap: "2.5rem", alignItems: "center",
         }}>
           <div style={{ flex: "1 1 420px", minWidth: 0 }}>
             <div style={{ fontSize: ".78rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: ACCENT, marginBottom: "1rem" }}>
@@ -263,7 +262,6 @@ export default function LandingBody() {
         <Cta />
         <Footer />
       </div>
-      <StickyMobileCta />
     </main>
   );
 }

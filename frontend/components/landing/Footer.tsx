@@ -27,11 +27,6 @@ export default function Footer() {
           Not legal advice. TELUVANE is a technical tool, consult qualified counsel for regulatory guidance.
         </div>
       </div>
-      <style>{`
-        @media (max-width: 767px) {
-          .site-footer { padding-bottom: calc(2rem + 64px); }
-        }
-      `}</style>
     </footer>
   );
 }
