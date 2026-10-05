@@ -116,7 +116,7 @@ export default function LandingBody() {
               AI agent accountability
             </div>
             <h1 style={{ fontSize: "clamp(2.3rem, 5.2vw, 3.4rem)", fontWeight: 900, letterSpacing: "-.045em", lineHeight: 1.06, marginBottom: "1.2rem" }}>
-              Every AI agent action, <span style={{ color: ACCENT }}>logged and hash-chained</span>.
+              Every AI agent action, logged and hash-chained.
             </h1>
             <p style={{ fontSize: "1.1rem", color: MUTED, lineHeight: 1.55, marginBottom: "2rem", maxWidth: 520 }}>
               Tamper one row and the chain breaks visibly. An autonomous tribunal audits the log and exports a regulator-ready evidence pack.
@@ -144,7 +144,6 @@ export default function LandingBody() {
 
       <FadeInSection id="problem" style={{ padding: "4.5rem 1.5rem", borderTop: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-          <div style={{ fontSize: ".78rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: ACCENT, marginBottom: ".6rem" }}>The problem</div>
           <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.4rem)", fontWeight: 800, letterSpacing: "-.025em", lineHeight: 1.15, marginBottom: "2.5rem", maxWidth: 640 }}>
             The EU AI Act asks for proof, not just logs.
           </h2>
@@ -166,7 +165,6 @@ export default function LandingBody() {
 
       <FadeInSection id="how" style={{ padding: "4.5rem 1.5rem", borderTop: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-          <div style={{ fontSize: ".78rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: ACCENT, marginBottom: ".6rem" }}>How it works</div>
           <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.4rem)", fontWeight: 800, letterSpacing: "-.025em", marginBottom: "2.8rem", maxWidth: 640 }}>
             Four steps from first action to court-ready evidence.
           </h2>
@@ -212,7 +210,6 @@ export default function LandingBody() {
 
       <FadeInSection id="proof" style={{ padding: "4.5rem 1.5rem", background: INK }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <div style={{ fontSize: ".78rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "#6f9db4", marginBottom: ".6rem" }}>Proof</div>
           <h2 style={{ fontSize: "clamp(1.7rem, 3.8vw, 2.3rem)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: "1.2rem", maxWidth: 620, color: BG }}>
             Verification walks the whole chain, not just the last row.
           </h2>
@@ -227,7 +224,6 @@ export default function LandingBody() {
 
       <FadeInSection id="trust" style={{ padding: "4.5rem 1.5rem", borderTop: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
-          <div style={{ fontSize: ".78rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: ACCENT, marginBottom: ".6rem" }}>Security</div>
           <h2 style={{ fontSize: "clamp(1.6rem, 3.6vw, 2.1rem)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: "1rem", maxWidth: 560 }}>
             We&apos;re early-stage. Here&apos;s what&apos;s already true.
           </h2>

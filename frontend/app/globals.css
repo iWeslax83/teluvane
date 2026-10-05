@@ -7,7 +7,7 @@
   /* Semantic critical/alert color, separate from --accent. Only for things that
      are actually wrong (a broken hash chain, a tampered event, a failing check). */
   --critical: #c01c28;
-  --muted: #8a8275;
+  --muted: #6b6458;
   --border: #e3dccd;
   --shadow: 0 1px 2px rgba(26, 23, 20, 0.04), 0 10px 30px rgba(26, 23, 20, 0.07);
 }

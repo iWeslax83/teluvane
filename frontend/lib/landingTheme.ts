@@ -6,7 +6,8 @@ export const INK = "#1a1714";
 export const ACCENT = "#2f5266";
 export const ACCENT_DARK = "#213a49";
 export const ACCENT_ON_FILL = "#ffffff";
-export const MUTED = "#8a8275";
+// 5.1:1 on BG (WCAG AA for body text). The old #8a8275 was about 3.4:1.
+export const MUTED = "#6b6458";
 export const BORDER = "#e3dccd";
 // Semantic critical/alert color, separate from ACCENT. Used only where something
 // is actually wrong (a broken hash chain, a tampered event), never as decoration.

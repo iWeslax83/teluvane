@@ -65,7 +65,7 @@ export default function OpengraphImage() {
         <div
           style={{
             fontSize: 24,
-            color: "#8a8275",
+            color: "#6b6458",
             marginTop: 24,
             maxWidth: 800,
           }}

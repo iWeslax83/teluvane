@@ -55,11 +55,8 @@ function Tier({
 export default function PricingZigzag({ headingColor = INK }: { headingColor?: string }) {
   return (
     <div>
-      <div style={{ fontSize: ".78rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: ACCENT, marginBottom: ".6rem" }}>
+      <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.4rem)", fontWeight: 800, letterSpacing: "-.025em", marginBottom: "2.5rem", color: headingColor }}>
         Pricing
-      </div>
-      <h2 style={{ fontSize: "2rem", fontWeight: 800, letterSpacing: "-.02em", marginBottom: "2.5rem", color: headingColor }}>
-        Scale with confidence.
       </h2>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "1.6rem", alignItems: "stretch" }}>

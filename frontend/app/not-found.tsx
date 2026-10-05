@@ -41,7 +41,7 @@ export default function NotFound() {
       <h1 style={{ fontSize: "2rem", fontWeight: 800, letterSpacing: "-0.02em", margin: 0 }}>
         Page not found
       </h1>
-      <p style={{ color: "#8a8275", maxWidth: 420, margin: 0 }}>
+      <p style={{ color: "#6b6458", maxWidth: 420, margin: 0 }}>
         The page you&apos;re looking for doesn&apos;t exist or has moved. Check the URL, or head back to
         the homepage.
       </p>

@@ -1,26 +1,26 @@
 import { BG, INK, MUTED, BORDER } from "@/lib/landingTheme";
 
+const LINKS = [
+  { href: "mailto:hello@teluvane.com", label: "Contact" },
+  { href: "/about", label: "About" },
+  { href: "/blog", label: "Blog" },
+  { href: "/login", label: "Dashboard" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
+  { href: "/accessibility", label: "Accessibility" },
+];
+
 export default function Footer() {
   return (
-    <footer className="site-footer" style={{ background: BG, color: MUTED, padding: "2rem", textAlign: "center", fontSize: ".83rem", borderTop: `1px solid ${BORDER}` }}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: ".5rem" }}>
+    <footer className="site-footer" style={{ background: BG, color: MUTED, padding: "2rem 1.25rem", textAlign: "center", fontSize: ".83rem", borderTop: `1px solid ${BORDER}` }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: ".75rem" }}>
         <div><strong style={{ color: INK }}>TELUVANE</strong>: AI Agent Accountability and Compliance</div>
-        <div>
-          <a href="mailto:hello@teluvane.com" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Contact</a>
-          &nbsp;·&nbsp;
-          <a href="/about" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>About</a>
-          &nbsp;·&nbsp;
-          <a href="/blog" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Blog</a>
-          &nbsp;·&nbsp;
-          <a href="/login" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Dashboard</a>
-          &nbsp;·&nbsp;
-          <a href="/privacy" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Privacy</a>
-          &nbsp;·&nbsp;
-          <a href="/terms" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Terms</a>
-          &nbsp;·&nbsp;
-          <a href="/accessibility" className="landing-link" style={{ color: MUTED, textDecoration: "none" }}>Accessibility</a>
-        </div>
-        <div style={{ fontSize: ".78rem", color: MUTED, marginTop: ".25rem" }}>
+        <nav aria-label="Footer" style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: ".25rem 1.25rem" }}>
+          {LINKS.map(({ href, label }) => (
+            <a key={href} href={href} className="landing-link" style={{ color: MUTED, textDecoration: "none", padding: ".4rem 0" }}>{label}</a>
+          ))}
+        </nav>
+        <div style={{ fontSize: ".78rem", color: MUTED }}>
           Bursa, Türkiye
         </div>
         <div style={{ fontSize: ".78rem", color: MUTED }}>
